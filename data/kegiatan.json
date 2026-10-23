@@ -1,0 +1,37 @@
+{
+  "units": [
+    {
+      "slug": "tim-it",
+      "nama": "Tim IT",
+      "kegiatan": [
+        {
+          "id": "it-2026-10-01",
+          "judul": "Pelatihan Keamanan Data",
+          "tanggal": "2026-10-01",
+          "deskripsi": "Sesi pelatihan internal tentang keamanan data.",
+          "foto": []
+        },
+        {
+          "id": "it-2026-09-14",
+          "judul": "Pemasangan Sistem Baru",
+          "tanggal": "2026-09-14",
+          "deskripsi": "Migrasi sistem absensi.",
+          "foto": []
+        }
+      ]
+    },
+    {
+      "slug": "tim-hrd",
+      "nama": "Tim HRD",
+      "kegiatan": [
+        {
+          "id": "hrd-2026-10-05",
+          "judul": "Gathering Kantor",
+          "tanggal": "2026-10-05",
+          "deskripsi": "Kebersamaan seluruh karyawan.",
+          "foto": []
+        }
+      ]
+    }
+  ]
+}

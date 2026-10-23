@@ -1,0 +1,187 @@
+/* Halaman dokumentasi: futuristik (kaca, grid tipis, glow) dengan nuansa sakura */
+
+.page {
+  position: relative;
+  min-height: 100dvh;
+  background: #efd9e1;
+  color: #3a2631;
+  font-family: var(--font-body), "Zen Kaku Gothic New", system-ui, sans-serif;
+  padding: 96px clamp(20px, 5vw, 80px) 80px;
+  overflow: hidden;
+}
+
+/* Grid futuristik tipis di background */
+.page::before {
+  content: "";
+  position: absolute;
+  inset: -40px;
+  background-image:
+    linear-gradient(rgba(194, 88, 127, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(194, 88, 127, 0.12) 1px, transparent 1px);
+  background-size: 64px 64px;
+  animation: gridDrift 30s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.page > * { position: relative; z-index: 1; }
+
+.label {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: #c2587f;
+  text-transform: uppercase;
+}
+
+.heading {
+  font-family: var(--font-display), "Shippori Mincho", serif;
+  font-weight: 400;
+  font-size: clamp(32px, 4.5vw, 56px);
+  margin: 8px 0 32px;
+}
+
+/* Kartu unit */
+.unitGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+@media (max-width: 1023px) { .unitGrid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 639px)  { .unitGrid { grid-template-columns: 1fr; } }
+
+.unitCard {
+  position: relative;
+  display: block;
+  border-radius: 18px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255,255,255,.8), rgba(194,88,127,.25));
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow .4s ease, transform .4s ease;
+}
+.unitCard:hover {
+  box-shadow: 0 0 0 1px rgba(194,88,127,.35), 0 12px 40px -12px rgba(194,88,127,.45);
+  transform: translateY(-2px);
+}
+.unitCard:focus-visible { outline: 2px solid #c2587f; outline-offset: 3px; }
+
+.unitInner {
+  border-radius: 17px;
+  background: rgba(255, 246, 250, 0.75);
+  backdrop-filter: blur(12px);
+  padding: 20px;
+  height: 100%;
+}
+
+.unitNo {
+  font-size: 12px;
+  letter-spacing: .2em;
+  color: #c2587f;
+}
+
+.unitName {
+  font-family: var(--font-display), "Shippori Mincho", serif;
+  font-size: 24px;
+  margin: 6px 0 4px;
+}
+
+.unitMeta { font-size: 13px; opacity: .75; }
+
+/* Timeline */
+.timeline {
+  position: relative;
+  margin-left: 8px;
+  padding-left: 28px;
+  border-left: 1px solid rgba(194,88,127,.35);
+  transform-origin: top;
+  animation: growLine 1.2s cubic-bezier(.22,1,.36,1) both;
+}
+
+.item { position: relative; margin-bottom: 40px; }
+.item::before {
+  content: "";
+  position: absolute;
+  left: -33px;
+  top: 6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #c2587f;
+  box-shadow: 0 0 0 4px rgba(194,88,127,.18);
+}
+
+/* Kartu kegiatan */
+.card {
+  border-radius: 18px;
+  padding: 20px;
+  background: rgba(255, 246, 250, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.7);
+  transition: box-shadow .4s ease;
+}
+.card:hover { box-shadow: 0 0 0 1px rgba(194,88,127,.3), 0 12px 40px -12px rgba(194,88,127,.4); }
+
+.cardHead { margin-bottom: 14px; }
+.date {
+  display: block;
+  font-size: 12px;
+  letter-spacing: .15em;
+  color: #c2587f;
+}
+.title {
+  font-family: var(--font-display), "Shippori Mincho", serif;
+  font-weight: 400;
+  font-size: clamp(20px, 2.4vw, 28px);
+  margin: 4px 0;
+}
+.desc { font-size: 14px; opacity: .8; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+@media (max-width: 639px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+
+.photo {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #efd9e1;
+}
+.photo img, .photo > span:first-child { border-radius: 12px; }
+
+.more {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(58, 38, 49, .45);
+  color: #fff;
+  font-size: 22px;
+}
+
+.placeholder {
+  aspect-ratio: 4 / 1;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(194,88,127,.08);
+  color: #c2587f;
+  font-size: 28px;
+}
+
+/* Kelopak/animasi */
+@keyframes gridDrift {
+  from { transform: translate(0, 0); }
+  to   { transform: translate(64px, 0); }
+}
+@keyframes growLine {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page::before, .timeline { animation: none; }
+}

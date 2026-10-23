@@ -1,0 +1,185 @@
+/* components/Hero.module.css */
+
+.heroContainer {
+  position: relative;
+  width: 100vw;
+  height: 100svh;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f4f3ee; /* Fallback color */
+  font-family:
+    "Manrope", "Inter", sans-serif; /* Using fonts suggested in design.md */
+}
+
+/* Layer 0: Video */
+.videoLayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+  opacity: 1;
+}
+
+/* Layer 1: Tint (Overlay) */
+.tintLayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  background: radial-gradient(
+    circle at center,
+    transparent 0%,
+    rgba(42, 43, 36, 0) 0%,
+    rgba(42, 43, 36, 0.35) 70%
+  );
+  opacity: 1;
+  transition: opacity 0.5s ease-in-out; /* Smooth for transition */
+}
+
+/* Content Wrapper - positioning text and CTA */
+.contentWrapper {
+  position: relative;
+  z-index: 3; /* Must be above the video and tint */
+  text-align: center;
+  /* Centering slightly below vertical middle (approx 58%) */
+  transform: translateY(-50%);
+  width: 100%;
+  max-width: 720px;
+  padding: 24px 48px; /* Default desktop padding, will be overridden by media queries */
+}
+
+.headlineWrapper {
+  margin-bottom: 60px;
+  /* Initial hidden state for animation */
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Styles for Headline lines */
+.headline {
+  font-size: 36px; /* Mobile base */
+  line-height: 1.1;
+  color: white;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.line1 {
+  /* Sans-serif */
+  font-size: 56px; /* Desktop base */
+  color: rgba(255, 255, 255, 0.85);
+  display: block;
+  letter-spacing: 0.05em;
+}
+
+.line2 {
+  /* Script font (needs Google Fonts import) */
+  font-size: 96px; /* Desktop base */
+  color: white;
+  display: block;
+  margin-top: -18px; /* Vertical offset */
+  position: relative;
+  /* Initial hidden state for reveal animation */
+  clip-path: inset(0% 100% 0% 0%);
+  transition: clip-path 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* CTA Button */
+.ctaWrapper {
+  margin-top: 40px;
+  opacity: 0;
+  transform: scale(0.92);
+  transition:
+    opacity 0.7s ease-out,
+    transform 0.7s ease-out;
+}
+
+.ctaButton {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px; /* Pill shape */
+  background-color: #0e0e0e;
+  color: white;
+  text-decoration: none;
+  padding: 0 24px; /* Adjust for text and icon */
+  height: 52px;
+  width: 100%;
+  max-width: 400px;
+  transition: all 0.3s ease;
+  justify-content: center;
+}
+
+.ctaContent {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.ctaContent span:first-child {
+  padding-right: 24px;
+  white-space: nowrap;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.ctaContent span:last-child {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #0e0e0e; /* White icon outline on black background */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+/* Hover effects for CTA */
+.ctaButton:hover .ctaContent span:last-child {
+  transform: translateX(4px);
+}
+
+.ctaButton:focus {
+  outline: 2px solid white;
+  outline-offset: 3px;
+}
+
+/* Transitions */
+.animateIn {
+  /* Apply classes dynamically in JS/framework */
+}
+
+/* Media Queries for responsive design */
+@media (min-width: 640px) {
+  .contentWrapper {
+    padding: 24px 96px; /* Desktop padding */
+  }
+
+  .line1 {
+    font-size: 56px; /* Desktop size for line 1 */
+  }
+
+  .line2 {
+    font-size: 96px; /* Desktop size for line 2 */
+  }
+}
+
+@media (min-width: 1024px) {
+  .contentWrapper {
+    padding: 24px 96px;
+  }
+  /* Further adjustments for large screens if needed */
+}
+
+/* Logic to handle initial animation/transition will be in the page component */
+/* The animation timing specified in design.md will need to be handled by CSS keyframes or library-based transitions applied to the classes above (e.g. transition durations and easing functions). */
