@@ -9,8 +9,8 @@ export const heroContent = {
   navCta: { label: "Go to the room", href: "/dokumentasi" },
   kicker: "The Dynamic Pulse",
   headline: "True the Light",
-  primaryCta: { label: "Let's Talks", href: "/dokumentasi" },
-  secondaryCta: { label: "Activity Highlights", href: "#" },
+  primaryCta: { label: "Let's Talks", href: "/talks-showcase" },
+  secondaryCta: { label: "Activity Highlights", href: "/galeri" },
   watermark: "Ethereal",
   subjectAlt: "Ilustrasi wanita berhijab dengan kimono merah muda dihiasi bunga sakura",
 } as const;
