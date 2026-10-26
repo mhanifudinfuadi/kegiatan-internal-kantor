@@ -34,13 +34,6 @@ export default function Hero() {
           <i className={s.logoDot} aria-hidden="true" />
           <span>{c.logo}</span>
         </Link>
-        <ul className={s.menu}>
-          {c.nav.map((item) => (
-            <li key={item.label}>
-              <a href={item.href} aria-disabled="true">{item.label}</a>
-            </li>
-          ))}
-        </ul>
         <div className={s.navCta}>
           <Link href={c.navCta.href} className={s.pill}>
             <span>{c.navCta.label}</span>
@@ -59,9 +52,6 @@ export default function Hero() {
             <span>{c.primaryCta.label}</span>
             <span className={s.icon}><Arrow size={10} /></span>
           </Link>
-          <a href={c.secondaryCta.href} aria-disabled="true" className={`${s.btn} ${s.btnGhost}`}>
-            {c.secondaryCta.label}
-          </a>
         </div>
       </div>
 

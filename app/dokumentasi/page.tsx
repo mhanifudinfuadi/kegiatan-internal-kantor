@@ -63,7 +63,7 @@ export default async function DokumentasiPage() {
         <div className={styles.breadcrumb}><Link href="/">Beranda</Link><span>/</span><span>Dokumentasi</span><span className={styles.jp}>· 活動記録</span></div>
         <div className={styles.introRow}>
           <div className={styles.introCopy}>
-            <p className={styles.eyebrow}>ARSIP KEGIATAN · MADU JAKBAR SPORT</p>
+            <p className={styles.eyebrow}>ARSIP KEGIATAN · INTERNAL MADU JAKBAR</p>
             <h1 id="page-title">Cerita di balik<br /><em>setiap kebersamaan.</em></h1>
             <p className={styles.lede}>Jelajahi dokumentasi kegiatan internal dari setiap unit kerja.</p>
           </div>

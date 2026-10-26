@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Preview — Card Scan Sakura Cyber Smooth</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&family=Shippori+Mincho:wght@400;600&display=swap');
+:root{--pink:#f29bbd;--pale:#ffd0e0;--ink:#fbeef4;--muted:#c79bb1;--bg:#100b12}
+*{box-sizing:border-box}
+body{margin:0;color:var(--ink);font-family:'Noto Sans JP',system-ui,sans-serif;background:radial-gradient(ellipse at 50% 30%,rgba(160,66,112,.19),transparent 42%),radial-gradient(ellipse at 12% 85%,rgba(106,51,100,.15),transparent 35%),linear-gradient(135deg,#171019,#0c080d 70%);min-height:100vh;overflow-x:hidden}
+header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px clamp(20px,5vw,72px);border-bottom:1px solid rgba(255,208,224,.12)}
+.brand{display:flex;align-items:center;gap:12px;font-weight:700;letter-spacing:.04em}.mark{width:36px;height:36px;border-radius:50%;background:radial-gradient(circle at 50% 28%,#fff 0 8%,#ffd0e0 9% 20%,transparent 22%),radial-gradient(circle at 28% 56%,#f29bbd 0 22%,transparent 24%),radial-gradient(circle at 72% 56%,#d45e98 0 22%,transparent 24%);filter:drop-shadow(0 0 10px #f29bbd77)}
+.pill{border:1px solid #f29bbd55;color:#ffd0e0;border-radius:999px;padding:8px 12px;font-size:11px;letter-spacing:.14em}
+.intro{max-width:1100px;margin:0 auto;padding:46px 24px 20px}.eyebrow{font-size:11px;letter-spacing:.24em;color:var(--pink);text-transform:uppercase}.intro h1{font:400 clamp(32px,4.5vw,54px)/1.12 'Shippori Mincho',serif;max-width:760px;margin:12px 0}.intro h1 span{color:#ffc5dc}.intro p{color:var(--muted);max-width:650px;line-height:1.8;font-size:14px}
+.stage{position:relative;height:clamp(360px,52vw,510px);margin:22px 0 0;overflow:hidden;isolation:isolate;border-top:1px solid #f29bbd17;border-bottom:1px solid #f29bbd17;background:linear-gradient(180deg,rgba(255,255,255,.012),transparent 30%,rgba(255,255,255,.018))}
+.stage:before,.stage:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:3}.stage:before{background:linear-gradient(90deg,#100b12 0%,transparent 13%,transparent 87%,#100b12 100%)}.stage:after{background:radial-gradient(ellipse at center,transparent 30%,rgba(7,4,8,.2) 100%)}
+.track{position:absolute;left:0;top:50%;height:clamp(300px,42vw,390px);transform:translateY(-50%);display:flex;gap:34px;will-change:transform}
+.card{position:relative;flex:0 0 clamp(220px,24vw,300px);height:100%;overflow:hidden;border:1px solid rgba(242,155,189,.22);border-radius:24px;background:#171019;box-shadow:0 18px 50px #0006;isolation:isolate}
+.chip{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 12px,rgba(242,155,189,.055) 13px 14px),repeating-linear-gradient(90deg,transparent 0 17px,rgba(242,155,189,.07) 18px 19px),linear-gradient(135deg,#261622,#100b12 75%);z-index:0}
+.chip:before{content:"桜光夢風雲龍水火空心和道未来電脳夜花月雪京炎鋼刃";position:absolute;inset:12px;display:block;word-break:break-all;line-height:1.75;letter-spacing:.3em;color:#f29bbd30;font-size:16px;opacity:.9}
+.photo{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.86;z-index:1;clip-path:inset(0 0 0 0);filter:saturate(.88) contrast(1.04);will-change:clip-path,opacity}
+.photo:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,8,13,.03) 25%,rgba(12,8,13,.88) 100%)}
+.card:nth-child(1) .photo{background-image:url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=700&q=80')}
+.card:nth-child(2) .photo{background-image:url('https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=700&q=80')}
+.card:nth-child(3) .photo{background-image:url('https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=700&q=80')}
+.card:nth-child(4) .photo{background-image:url('https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=700&q=80')}
+.card:nth-child(5) .photo{background-image:url('https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=700&q=80')}
+.glyphs{position:absolute;inset:0;z-index:2;display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(13,1fr);padding:12px;gap:1px;pointer-events:none;mask-image:linear-gradient(90deg,#000 0%,#000 72%,transparent 100%)}
+.glyphs span{font-size:clamp(10px,1.2vw,15px);color:#f29bbd20;text-align:center;align-self:center;transition:color .22s ease,text-shadow .22s ease}.scan-edge{position:absolute;top:0;bottom:0;width:38px;z-index:3;pointer-events:none;transform:translateX(-50%);background:linear-gradient(90deg,transparent,rgba(255,208,224,.48),rgba(255,134,190,.2),transparent);filter:blur(4px);will-change:left,opacity}
+.info{position:absolute;z-index:4;left:22px;right:20px;bottom:22px;text-shadow:0 2px 12px #000;pointer-events:none}
+.tag{font-size:10px;letter-spacing:.19em;color:#ffc3da;text-transform:uppercase}.info h2{font:400 23px/1.25 'Shippori Mincho',serif;margin:9px 0}.info p{font-size:11px;color:#e4c7d5;margin:0}
+.beam{position:absolute;z-index:5;top:50%;left:30%;height:clamp(300px,42vw,390px);width:1px;transform:translate(-50%,-50%);pointer-events:none;background:linear-gradient(180deg,transparent,rgba(255,208,224,.7) 8%,#fff 50%,rgba(255,208,224,.7) 92%,transparent);box-shadow:0 0 7px 2px #ffd0e0,0 0 25px 8px #ff8dbd88,0 0 90px 20px #ff8dbd35}
+.beam:before{content:"";position:absolute;left:50%;top:0;bottom:0;width:180px;transform:translateX(-50%);background:linear-gradient(90deg,transparent,rgba(255,134,190,.06) 38%,rgba(255,174,211,.16) 50%,rgba(255,134,190,.06) 62%,transparent);filter:blur(7px)}
+.beam:after{content:"";position:absolute;left:50%;top:50%;width:12px;height:12px;border-radius:50%;transform:translate(-50%,-50%);background:#fff;box-shadow:0 0 10px 5px #fff,0 0 28px 12px #ff9fc8}
+.petals{position:absolute;inset:0;pointer-events:none;z-index:6;overflow:hidden}.petal{position:absolute;width:7px;height:11px;border-radius:80% 0 80% 0;background:#f29bbd77;filter:blur(.2px);animation:fall linear infinite}
+@keyframes fall{from{transform:translate3d(0,-30px,0) rotate(0)}to{transform:translate3d(65px,520px,0) rotate(300deg)}}
+.controls{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:24px}.btn{border:1px solid #f29bbd55;background:#241622;color:#fbeef4;padding:10px 16px;border-radius:999px;font:inherit;font-size:12px;cursor:pointer;transition:background .25s ease,border-color .25s ease,transform .25s ease}.btn:hover{background:#422237;border-color:#f29bbd;transform:translateY(-1px)}.btn.primary{background:#f29bbd;color:#1a0c14;border-color:#f29bbd;font-weight:700}.note{text-align:center;color:#a98a9c;font-size:11px;padding:0 20px 30px;line-height:1.7}.status{color:#ffd0e0;min-width:90px;font-size:11px;text-align:center}
+@media(max-width:600px){header{padding:18px 20px}.pill{font-size:9px}.intro{padding:34px 20px 12px}.intro p{font-size:13px}.stage{height:390px}.track{height:300px;gap:24px}.card{flex-basis:230px;border-radius:20px}.beam{height:300px}.info{left:17px;bottom:18px}.info h2{font-size:20px}.glyphs{padding:8px}.beam:before{width:130px}}
+@media(prefers-reduced-motion:reduce){.petal{display:none}.btn{transition:none}}
+</style>
+</head>
+<body>
+<header><div class="brand"><div class="mark"></div><span>SAKURA / 活動記録</span></div><div class="pill">CARD SCAN · SMOOTH PREVIEW V3</div></header>
+<section class="intro"><div class="eyebrow">/The Revelation - ユイイツムニノテンニョ
+/ v3</div><h1>Setiap kegiatan, <span>terungkap oleh cahaya.</span></h1><p>Foto masuk dari sisi kanan dalam keadaan utuh. Saat melewati garis pemindai, bagian foto di belakang garis memudar dan terurai menjadi kode hiragana, katakana, serta kanji bercahaya.</p></section>
+<section class="stage" id="stage" aria-label="Animasi preview kartu dengan scanning line">
+  <div class="track" id="track">
+    <article class="card"><div class="chip"></div><div class="photo"></div><div class="glyphs"></div><div class="info"><div class="tag">01 / Community</div><h2>Ruang untuk Bertumbuh</h2><p>Dokumentasi kegiatan bersama</p></div></article>
+    <article class="card"><div class="chip"></div><div class="photo"></div><div class="glyphs"></div><div class="info"><div class="tag">02 / Gathering</div><h2>Ikatan dalam Kebersamaan</h2><p>Momen yang menjadi cerita</p></div></article>
+    <article class="card"><div class="chip"></div><div class="photo"></div><div class="glyphs"></div><div class="info"><div class="tag">03 / Workshop</div><h2>Belajar dan Berkarya</h2><p>Melangkah dengan rasa ingin tahu</p></div></article>
+    <article class="card"><div class="chip"></div><div class="photo"></div><div class="glyphs"></div><div class="info"><div class="tag">04 / Education</div><h2>Menemukan Perspektif</h2><p>Pengetahuan untuk masa depan</p></div></article>
+    <article class="card"><div class="chip"></div><div class="photo"></div><div class="glyphs"></div><div class="info"><div class="tag">05 / Together</div><h2>Bergerak sebagai Satu</h2><p>Setiap langkah punya arti</p></div></article>
+  </div>
+  <div class="beam"></div><div class="petals" id="petals"></div>
+</section>
+<div class="controls"><button class="btn primary" id="toggle">Jeda animasi</button><button class="btn" id="slower">Perlambat</button><button class="btn" id="faster">Percepat</button><span class="status" id="speed">55 px/detik</span></div>
+<p class="note">Foto utuh sebelum pemindaian • Foto berubah menjadi aksara Jepang setelah melewati garis cahaya. Foto contoh memerlukan koneksi internet.</p>
+<script>
+const track=document.getElementById('track'), stage=document.getElementById('stage');
+const originalCards=[...track.querySelectorAll('.card')];
+// Duplikasi deretan kartu agar loop bergerak terus tanpa jeda kosong.
+originalCards.forEach(card=>track.appendChild(card.cloneNode(true)));
+const cards=[...track.querySelectorAll('.card')];
+const speedLabel=document.getElementById('speed');
+let speed=55, paused=false, last=0, offset=0, hover=false;
+const cardWidth=()=>cards[0]?.getBoundingClientRect().width||260;
+const gapSize=()=>parseFloat(getComputedStyle(track).gap)||34;
+const loopWidth=()=>originalCards.length*(cardWidth()+gapSize());
+const kanji='桜光夢風雲龍水火空心和道未来電脳夜花月雪京炎鋼刃森海星風景';
+const hiragana='あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん';
+const katakana='アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+const codeChars=kanji+hiragana+katakana;
+function buildGlyphs(){
+  cards.forEach(card=>{
+    const box=card.querySelector('.glyphs');
+    if(!box.childElementCount){
+      for(let i=0;i<130;i++){
+        const span=document.createElement('span');
+        span.textContent=codeChars[Math.floor(Math.random()*codeChars.length)];
+        box.appendChild(span);
+      }
+    }
+    if(!card.querySelector('.scan-edge')){
+      const edge=document.createElement('span');
+      edge.className='scan-edge';
+      card.appendChild(edge);
+    }
+  });
+}
+function petals(){
+  const root=document.getElementById('petals');
+  for(let i=0;i<15;i++){
+    const petal=document.createElement('i');petal.className='petal';
+    petal.style.left=Math.random()*100+'%';petal.style.top=(-Math.random()*500)+'px';
+    petal.style.animationDuration=(8+Math.random()*10)+'s';petal.style.animationDelay=(-Math.random()*14)+'s';
+    petal.style.opacity=(.25+Math.random()*.5);root.appendChild(petal);
+  }
+}
+function frame(t){
+  if(!last)last=t;
+  const dt=Math.min((t-last)/1000,.04);last=t;
+  if(!paused){
+    offset-=speed*(hover?.35:1)*dt;
+    const loop=loopWidth();
+    if(offset<=-loop)offset+=loop;
+    track.style.transform=`translate3d(${offset}px,-50%,0)`;
+  }
+  const beamX=stage.getBoundingClientRect().left+stage.clientWidth*0.30;
+  cards.forEach(card=>{
+    const rect=card.getBoundingClientRect();
+    // Progress 0: kartu masih di kanan garis, foto utuh.
+    // Progress 1: seluruh kartu sudah melewati garis, foto hilang menjadi aksara.
+    const progress=Math.max(0,Math.min(1,(beamX-rect.left)/rect.width));
+    const photo=card.querySelector('.photo');
+    photo.style.clipPath=`inset(0 0 0 ${progress*100}%)`;
+    photo.style.opacity=String(.88-progress*.12);
+    const edge=card.querySelector('.scan-edge');
+    edge.style.left=(progress*100)+'%';
+    edge.style.opacity=(progress>.015&&progress<.985)?'1':'0';
+    const glyphs=card.querySelectorAll('.glyphs span');
+    glyphs.forEach((glyph,i)=>{
+      const col=i%10;
+      const threshold=progress*10;
+      const scanned=col<threshold;
+      glyph.style.color=scanned?'rgba(255,224,239,.58)':'rgba(242,155,189,.12)';
+      glyph.style.textShadow=(col>=threshold-.8&&col<threshold+.6&&progress>0&&progress<1)
+        ?'0 0 9px rgba(255,190,218,.95), 0 0 18px rgba(242,155,189,.55)':'none';
+    });
+  });
+  requestAnimationFrame(frame);
+}
+stage.addEventListener('pointerenter',()=>hover=true);
+stage.addEventListener('pointerleave',()=>hover=false);
+document.getElementById('toggle').addEventListener('click',event=>{
+  paused=!paused;event.currentTarget.textContent=paused?'Lanjutkan animasi':'Jeda animasi';if(!paused)last=0;
+});
+document.getElementById('slower').addEventListener('click',()=>{speed=Math.max(15,speed-10);speedLabel.textContent=speed+' px/detik'});
+document.getElementById('faster').addEventListener('click',()=>{speed=Math.min(100,speed+10);speedLabel.textContent=speed+' px/detik'});
+buildGlyphs();petals();requestAnimationFrame(frame);
+</script>
+</body></html>
