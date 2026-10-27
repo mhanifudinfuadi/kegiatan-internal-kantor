@@ -48,7 +48,7 @@ export default async function DokumentasiPage() {
   return (
     <main className={styles.page}>
       <div className={styles.atmosphere} aria-hidden="true" />
-      <header className={styles.nav}>
+            <header className={styles.nav}>
         <Link href="/" className={styles.brand} aria-label="Kembali ke beranda Kegiatan Internal Kantor">
           <span className={styles.brandMark} aria-hidden="true">花</span>
           <span><strong>Ethereal</strong><small>Kegiatan Internal Kantor</small></span>
@@ -56,7 +56,6 @@ export default async function DokumentasiPage() {
         <nav className={styles.navLinks} aria-label="Jejak halaman">
           <Link href="/">Beranda</Link><span aria-hidden="true">/</span><span aria-current="page">Dokumentasi</span>
         </nav>
-        <Link href="/dashboard" className={styles.homeLink}>Unggah Dokumentasi <span aria-hidden="true">↗</span></Link>
         <Link href="/" className={styles.homeLink}>Kembali <span aria-hidden="true">↗</span></Link>
       </header>
 
