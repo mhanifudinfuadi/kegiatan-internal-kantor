@@ -1,21 +1,18 @@
 "use client";
 
-import { getUnits } from "@/lib/kegiatan";
 import Link from "next/link";
+import { fetchKegiatan } from "@/lib/supabase";
 
-export default function DokumentasiShowcasePage() {
-  const units = getUnits();
-  const all = units.flatMap((u) =>
-    u.kegiatan.flatMap((k) =>
-      k.foto.map((src, idx) => ({
-        src,
-        unit: u.nama,
-        title: k.judul,
-        tanggal: k.tanggal,
-        unitSlug: u.slug,
-      }))
-    )
-  );
+export default async function DokumentasiShowcasePage() {
+  const { kegiatan } = await fetchKegiatan(500);
+  const all = kegiatan
+    .filter((k) => k.fotoUrl)
+    .map((k) => ({
+      src: k.fotoUrl!,
+      unit: k.unitKerja,
+      title: k.judul,
+      tanggal: k.tanggal ?? "",
+    }));
 
   return (
     <main style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#f6e9ef,#efd9e1)", color: "#3a2631", position: "relative", overflow: "hidden" }}>
@@ -35,7 +32,7 @@ export default function DokumentasiShowcasePage() {
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: "1rem", marginTop: "2.5rem" }}>
             {all.map((p, i) => (
-              <figure key={i} style={{ margin: 0, borderRadius: 18, overflow: "hidden", background: "rgba(255,246,250,.7)", boxShadow: "0 20px 40px -20px rgba(194,88,127,.4)" }}>
+              <figure key={`${p.src}-${i}`} style={{ margin: 0, borderRadius: 18, overflow: "hidden", background: "rgba(255,246,250,.7)", boxShadow: "0 20px 40px -20px rgba(194,88,127,.4)" }}>
                 <div style={{ position: "relative", aspectRatio: "4/3" }}>
                   <img src={p.src} alt={`${p.title}, ${p.tanggal}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>

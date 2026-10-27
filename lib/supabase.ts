@@ -30,6 +30,22 @@ export const supabase = isSupabaseConfigured
 
 export const DOKUMENTASI_BUCKET = "dokumentasi"
 
+/**
+ * Klien admin (server only) dengan service_role key. Digunakan untuk
+ * unggah foto ke bucket dan insert baris dokumentasi dari halaman dashboard.
+ * Kunci ini tidak boleh pernah dikirim ke browser.
+ */
+const serviceUrl = process.env.SUPABASE_SERVICE_ROLE_URL ?? url
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+export const isSupabaseAdminConfigured = Boolean(serviceUrl && serviceKey)
+
+export const supabaseAdmin = isSupabaseAdminConfigured
+  ? createClient(serviceUrl as string, serviceKey as string, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+  : null
+
 type BarisDokumentasi = {
   id: number | string
   judul: string | null
@@ -104,10 +120,26 @@ export async function fetchKegiatan(limit = 200): Promise<KegiatanPayload> {
     }
   }
 
+  const kode = hasil.error?.code
+
+  // Tabel belum ada di schema cache Supabase (PGRST204). Mencoba ulang tanpa
+  // kolom unit_kerja tidak akan membantu karena tabel itu sendiri belum ada.
+  // Beri pesan aksi yang jelas agar tabel dibuat via migrasi SQL.
+  if (hasil.error && kode === "PGRST204") {
+    console.error(
+      "[kegiatan] gagal memuat: Tabel public.dokumentasi tidak ditemukan di schema cache Supabase. Jalankan docs/supabase-kegiatan-internal.sql di Supabase SQL Editor.",
+    )
+    return {
+      kegiatan: kegiatanContoh(),
+      sumber: "contoh",
+      catatan:
+        "Tabel dokumentasi belum tersedia di Supabase. Jalankan docs/supabase-kegiatan-internal.sql di Supabase SQL Editor, lalu muat ulang halaman. Menampilkan data contoh.",
+    }
+  }
+
   // Kolom `unit_kerja` ditambahkan lewat migrasi. Bila migrasi belum dijalankan
   // atau tabel belum punya kolom itu, ulangi запрос tanpa kolom tersebut.
-  const kode = hasil.error?.code
-  if (hasil.error && (kode === "42703" || kode === "PGRST204" || kode === "PGRST200")) {
+  if (hasil.error && (kode === "42703" || kode === "PGRST200")) {
     try {
       hasil = await jalankan(kolomTanpaUnitKerja)
     } catch (e: any) {

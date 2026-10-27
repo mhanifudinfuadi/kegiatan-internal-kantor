@@ -1,10 +1,15 @@
-import { getUnits } from "@/lib/kegiatan";
+import { fetchKegiatan } from "@/lib/supabase";
 
-export default function GaleriPage() {
-  const units = getUnits();
-  const photos = units.flatMap((u) =>
-    u.kegiatan.flatMap((k) => k.foto.map((src, i) => ({ src, unit: u.nama, title: k.judul, tanggal: k.tanggal, index: i + 1 })))
-  );
+export default async function GaleriPage() {
+  const { kegiatan } = await fetchKegiatan(500);
+  const photos = kegiatan
+    .filter((item) => item.fotoUrl)
+    .map((item) => ({
+      src: item.fotoUrl!,
+      unit: item.unitKerja,
+      title: item.judul,
+      tanggal: item.tanggal ?? "",
+    }));
 
   return (
     <main style={{ minHeight: "100vh", background: "linear-gradient(180deg,#f6e9ef,#efd9e1)", padding: "6rem 2rem 4rem", color: "#3a2631" }}>

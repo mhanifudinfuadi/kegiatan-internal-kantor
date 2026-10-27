@@ -56,6 +56,7 @@ export default async function DokumentasiPage() {
         <nav className={styles.navLinks} aria-label="Jejak halaman">
           <Link href="/">Beranda</Link><span aria-hidden="true">/</span><span aria-current="page">Dokumentasi</span>
         </nav>
+        <Link href="/dashboard" className={styles.homeLink}>Unggah Dokumentasi <span aria-hidden="true">↗</span></Link>
         <Link href="/" className={styles.homeLink}>Kembali <span aria-hidden="true">↗</span></Link>
       </header>
 
