@@ -6,4 +6,4 @@ overrides:
   'motion-utils': 12.23.6
 allowBuilds:
   sharp: true
-  unrs-resolver: set this to true or false
+  unrs-resolver: true
