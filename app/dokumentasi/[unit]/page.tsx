@@ -1,90 +1,138 @@
-﻿import { notFound } from "next/navigation";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import Link from "next/link";
 import { fetchKegiatan } from "@/lib/supabase";
 import { normalisasiUnitKerja } from "@/lib/unit-kerja";
+import type { Kegiatan } from "@/lib/types";
+import styles from "@/components/dokumentasi/DokumentasiUnit.module.css";
 
-function esc(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+function formatTanggalLengkap(value: string | null) {
+  if (!value) return "Tanggal belum dicatat";
+  const date = new Date(`${value.slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return "Tanggal belum dicatat";
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
 }
 
-function safePhotoUrl(value: string | null) {
-  if (!value) return null;
-  if (value.startsWith("/") && !value.startsWith("//")) return value;
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" || url.protocol === "https:" ? value : null;
-  } catch {
-    return null;
-  }
+function formatHari(value: string | null) {
+  if (!value) return "--";
+  const date = new Date(`${value.slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return "--";
+  return new Intl.DateTimeFormat("id-ID", { day: "2-digit" }).format(date);
 }
 
-function formatTanggal(iso: string | null) {
-  if (!iso) return "TANPA TANGGAL";
-  const [y, m, d] = iso.split("-").map(Number);
-  const bulan = ["JANUARI","FEBRUARI","MARET","APRIL","MEI","JUNI","JULI","AGUSTUS","SEPTEMBER","OKTOBER","NOVEMBER","DESEMBER"];
-  return `${d} ${bulan[m - 1]} ${y}`;
+function formatBulanTahun(value: string | null) {
+  if (!value) return "—";
+  const date = new Date(`${value.slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("id-ID", { month: "long", year: "numeric" }).format(date);
 }
 
-export default async function UnitPage({ params }: { params: Promise<{ unit: string }> }) {
-  const { unit: slug } = await params;
+function safePhotoUrl(url: string | null) {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+  return trimmed;
+}
+
+export default async function DokumentasiUnitPage({ params }: { params: Promise<{ unit: string }> }) {
+  const { unit } = await params;
   const { kegiatan } = await fetchKegiatan();
-  const items = kegiatan.filter((item) => normalisasiUnitKerja(item.unitKerja).slug === slug);
-
-  if (items.length === 0) notFound();
-
-  const nama = normalisasiUnitKerja(items[0].unitKerja).nama;
-  const fotoCount = items.filter((item) => safePhotoUrl(item.fotoUrl)).length;
-
-  const track = `<section class="track" id="track" tabindex="0" aria-label="Daftar kegiatan">${items
-    .map((item, index) => {
-      const photoUrl = safePhotoUrl(item.fotoUrl);
-      const photos = photoUrl ? 1 : 0;
-      return `<article class="slide" data-slide style="--d:${index * 90}ms"><span class="frame" aria-hidden="true"></span><span class="scan" aria-hidden="true"></span>
-  <div class="meta"><span class="tag">${String(index + 1).padStart(2, "0")}</span><time>${formatTanggal(item.tanggal)}</time><span class="line"></span><span class="count hudcode">${photos} FOTO</span></div>
-  <h3 class="title">${esc(item.judul)}</h3><p class="desc">${esc(item.keterangan ?? "")}</p>${
-    photoUrl
-      ? `<div class="cells" data-count="1"><button class="cell" data-idx="0" data-total="1" data-photo-url="${esc(photoUrl)}" aria-label="Buka foto 1 dari 1"><span class="bg" style="background-image:url(&quot;${esc(photoUrl)}&quot;);background-position:center 20%"></span><span class="corner">01</span></button></div>`
-      : `<div class="ph-empty"><span>âœ¿</span><p>Belum ada foto</p></div>`
-  }</article>`;
-    })
-    .join("")}</section>`;
-
-  const dots = `<div class="dots" id="dots">${items
-    .map((_, index) => `<button class="dot ${index === 0 ? "on" : ""}" data-i="${index}" aria-label="Kegiatan ${index + 1}"></button>`)
-    .join("")}</div>`;
-
-  let html = readFileSync(join(process.cwd(), "preview dokumentasi.html"), "utf8");
-  html = html.replace(/<span>Tim IT<\/span>/, `<span>${esc(nama)}</span>`);
-  html = html.replace(/<h1>Tim IT <em>Â·<\/em> Kegiatan<\/h1>/, `<h1>${esc(nama)} <em>Â·</em> Kegiatan</h1>`);
-  html = html.replace(/<div>Kegiatan<b>05<\/b><\/div>/, `<div>Kegiatan<b>${String(items.length).padStart(2, "0")}</b></div>`);
-  html = html.replace(/<div>Foto<b>11<\/b><\/div>/, `<div>Foto<b>${String(fotoCount).padStart(2, "0")}</b></div>`);
-  html = html.replace(/<span class="counter" id="c">01 <span>\/ 05<\/span><\/span>/, `<span class="counter" id="c">01 <span>/ ${String(items.length).padStart(2, "0")}</span></span>`);
-  html = html.replace(/<section class="track" id="track"[\s\S]*?<\/section>/, track);
-  html = html.replace(/<div class="dots" id="dots">[\s\S]*?<\/div>/, dots);
-  html = html.replace(
-    "const list=cells.map((c,j)=>({pos:getComputedStyle(c.querySelector('.bg')).backgroundPosition}));",
-    "const list=cells.map(c=>({url:c.dataset.photoUrl,pos:getComputedStyle(c.querySelector('.bg')).backgroundPosition}));",
-  );
-  html = html.replace(
-    /function lbRender\(\)\{[\s\S]*?\nfunction openLb/,
-    "function lbRender(){const c=lbList[lbI],img=document.getElementById('lbImg');img.style.backgroundImage='url('+JSON.stringify(c.url)+')';img.style.backgroundPosition=c.pos;\n  document.getElementById('lbCount').textContent=(lbI+1)+' / '+lbList.length;document.getElementById('lbTitle').textContent=lbT;\n  document.getElementById('lbDate').textContent=lbD;const dl=document.getElementById('lbDl');dl.href=c.url;dl.removeAttribute('onclick');dl.download=c.url.split('/').pop().split('?')[0]||'foto-dokumentasi';}\nfunction openLb",
-  );
+  const target = normalisasiUnitKerja(decodeURIComponent(unit).replace(/-/g, " "));
+  const items = kegiatan
+    .filter((item) => normalisasiUnitKerja(item.unitKerja).slug === target.slug)
+    .sort((a, b) => {
+      const ta = a.tanggal || a.createdAt;
+      const tb = b.tanggal || b.createdAt;
+      return tb.localeCompare(ta);
+    });
 
   return (
-    <iframe
-      title={`Dokumentasi ${nama}`}
-      srcDoc={html}
-      style={{ position: "fixed", inset: 0, width: "100%", height: "100%", border: 0 }}
-    />
+    <main className={styles.page}>
+      <div className={styles.atmosphere} aria-hidden="true" />
+      <header className={styles.nav}>
+        <Link href="/" className={styles.brand} aria-label="Kembali ke beranda Kegiatan Internal Kantor">
+          <span className={styles.brandMark} aria-hidden="true">花</span>
+          <span>
+            <strong>Ethereal</strong>
+            <small>Kegiatan Internal Kantor</small>
+          </span>
+        </Link>
+        <nav className={styles.navLinks} aria-label="Jejak halaman">
+          <Link href="/">Beranda</Link>
+          <span aria-hidden="true">/</span>
+          <Link href="/dokumentasi">Dokumentasi</Link>
+          <span aria-hidden="true">/</span>
+          <span>{target.nama}</span>
+        </nav>
+        <Link href="/dokumentasi" className={styles.homeLink}>
+          Kembali <span aria-hidden="true">↗</span>
+        </Link>
+      </header>
+
+      <section className={styles.intro} aria-labelledby="unit-title">
+        <div className={styles.breadcrumb}>
+          <Link href="/">Beranda</Link>
+          <span>/</span>
+          <Link href="/dokumentasi">Dokumentasi</Link>
+          <span>/</span>
+          <span>{target.nama}</span>
+          <span className={styles.jp}>· 活動記録</span>
+        </div>
+        <div className={styles.introHeader}>
+          <p className={styles.kicker}>UNIT KERJA · {target.nama.toUpperCase()}</p>
+          <h1 id="unit-title">Arsip {target.nama}</h1>
+          <div className={styles.metaRow}>
+            <span>{items.length} Kegiatan</span>
+            <span>{items.filter((item) => safePhotoUrl(item.fotoUrl)).length} Foto</span>
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.timeline} aria-label="Timeline kegiatan">
+        {items.map((item) => {
+          const photos = [safePhotoUrl(item.fotoUrl)].filter(Boolean) as string[];
+          return (
+            <article key={item.id} className={styles.event}>
+              <div className={styles.dateColumn}>
+                <span className={styles.day}>{formatHari(item.tanggal || item.createdAt)}</span>
+                <span className={styles.monthYear}>{formatBulanTahun(item.tanggal || item.createdAt)}</span>
+              </div>
+              <div className={styles.contentColumn}>
+                <header className={styles.headerBlock}>
+                  <span className={styles.kicker}>{formatTanggalLengkap(item.tanggal || item.createdAt)}</span>
+                  <h2>{item.judul}</h2>
+                </header>
+                {item.keterangan && <p className={styles.keterangan}>{item.keterangan}</p>}
+                {photos.length > 0 && (
+                  <div className={styles.photoGrid}>
+                    {photos.map((src, idx) => (
+                      <figure
+                        key={idx}
+                        className={`${styles.photoCard} ${photos.length === 1 ? styles.photoCardLarge : ""}`}
+                      >
+                        <img src={src} alt={`${item.judul} - foto ${idx + 1}`} loading="lazy" decoding="async" />
+                      </figure>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </article>
+          );
+        })}
+      </section>
+
+      <div className={styles.backRow}>
+        <Link href="/dokumentasi" className={styles.backLink}>
+          <span aria-hidden="true">←</span> Kembali ke daftar unit
+        </Link>
+      </div>
+
+      <footer className={styles.footer}>
+        <span>花　ETHEREAL</span>
+        <span>ARSIP KEGIATAN INTERNAL · {new Date().getFullYear()}</span>
+      </footer>
+    </main>
   );
 }
-
-
-
-
-

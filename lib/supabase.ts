@@ -5,16 +5,9 @@ import type { Kegiatan, KegiatanPayload } from "@/lib/types"
 /**
  * Sumber data tunggal website publik "Kegiatan Internal Kantor".
  *
- * Data dibaca dari tabel publik `dokumentasi` di Supabase yang sama dengan
- * portal admin utama (madujakbarsport-UPDATE). Admin mengunggah foto lewat
+ * Data dibaca dari tabel publik `kegiatan_internal_kantor` di Supabase yang sama
+ * dengan portal admin utama (madusportupdate). Admin mengunggah foto lewat
  * portal tersebut; website ini hanya membaca.
- *
- * Env yang dipakai:
- *   NEXT_PUBLIC_SUPABASE_URL
- *   NEXT_PUBLIC_SUPABASE_ANON_KEY
- *
- * Catatan hak akses: tabel `dokumentasi` harus diberi GRANT SELECT untuk role
- * anon. Jalankan docs/supabase-kegiatan-internal.sql di Supabase SQL Editor.
  */
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -29,66 +22,46 @@ export const supabase = isSupabaseConfigured
   : null
 
 export const DOKUMENTASI_BUCKET = "dokumentasi"
-
-/**
- * Klien admin (server only) dengan service_role key. Digunakan untuk
- * unggah foto ke bucket dan insert baris dokumentasi dari halaman dashboard.
- * Kunci ini tidak boleh pernah dikirim ke browser.
- */
-const serviceUrl = process.env.SUPABASE_SERVICE_ROLE_URL ?? url
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-export const isSupabaseAdminConfigured = Boolean(serviceUrl && serviceKey)
-
-export const supabaseAdmin = isSupabaseAdminConfigured
-  ? createClient(serviceUrl as string, serviceKey as string, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    })
-  : null
-
-type BarisDokumentasi = {
-  id: number | string
-  judul: string | null
-  keterangan: string | null
-  tanggal: string | null
-  storage_path: string | null
-  storage_url: string | null
-  urutan: number | null
-  created_at: string | null
-  unit_kerja?: string | null
-  cabang?: string | null
-}
+export const INTERNAL_PHOTOS_BUCKET = "kegiatan-internal-kantor-photos"
 
 const kolomLengkap =
-  "id, judul, keterangan, tanggal, storage_path, storage_url, urutan, created_at, unit_kerja, cabang"
-const kolomTanpaUnitKerja =
-  "id, judul, keterangan, tanggal, storage_path, storage_url, urutan, created_at, cabang"
+  "id, judul, sub_judul, jenis_kegiatan, cerita_kegiatan, image_path, image_url, published, created_at, tanggal_kegiatan, kegiatan_internal_photos(id, storage_path, storage_url)"
+const kolomTanpaRelasi =
+  "id, judul, sub_judul, jenis_kegiatan, cerita_kegiatan, image_path, image_url, published, created_at, tanggal_kegiatan"
 
-function keKegiatan(baris: BarisDokumentasi): Kegiatan {
-  const unit = normalisasiUnitKerja(baris.unit_kerja ?? baris.cabang)
+function keKegiatan(baris: any): Kegiatan {
+  const unit = normalisasiUnitKerja(baris.jenis_kegiatan ?? baris.sub_judul ?? baris.judul)
+
+  let fotoUrl: string | null = null
+  if (Array.isArray(baris.kegiatan_internal_photos) && baris.kegiatan_internal_photos.length > 0) {
+    const foto = baris.kegiatan_internal_photos.find((f: any) => f?.storage_url) || baris.kegiatan_internal_photos[0]
+    if (foto?.storage_url?.trim()) fotoUrl = foto.storage_url.trim()
+    else if (foto?.storage_path?.trim() && supabase) {
+      fotoUrl = supabase.storage.from(INTERNAL_PHOTOS_BUCKET).getPublicUrl(foto.storage_path.trim()).data.publicUrl
+    }
+  }
+  if (!fotoUrl && baris.image_url?.trim()) {
+    fotoUrl = baris.image_url.trim()
+  }
+  if (!fotoUrl && baris.image_path?.trim() && supabase) {
+    // Try both buckets
+    fotoUrl = supabase.storage.from(DOKUMENTASI_BUCKET).getPublicUrl(baris.image_path.trim()).data.publicUrl
+  }
+
+  const tanggal = baris.tanggal_kegiatan?.split?.("T")?.[0] ?? baris.created_at?.split?.("T")?.[0] ?? null
 
   return {
     id: String(baris.id),
     judul: (baris.judul ?? "").trim() || "Kegiatan Tanpa Judul",
-    keterangan: baris.keterangan?.trim() ? baris.keterangan.trim() : null,
-    tanggal: baris.tanggal ?? null,
+    keterangan: baris.cerita_kegiatan?.trim() ? baris.cerita_kegiatan.trim() : baris.sub_judul?.trim() || null,
+    tanggal,
     unitKerja: unit.nama,
     unitKerjaSlug: unit.slug,
-    fotoUrl:
-      baris.storage_url?.trim()
-        ? baris.storage_url.trim()
-        : baris.storage_path?.trim()
-          ? supabase!.storage.from(DOKUMENTASI_BUCKET).getPublicUrl(baris.storage_path.trim()).data.publicUrl
-          : null,
+    fotoUrl,
     createdAt: baris.created_at ?? "",
   }
 }
 
-/**
- * Ambil daftar kegiatan terbaru. Mengembalikan `sumber: "contoh"` beserta
- * catatan bila Supabase belum dikonfigurasi atau belum bisa dibaca, supaya
- * halaman tetap informatif.
- */
 export async function fetchKegiatan(limit = 200): Promise<KegiatanPayload> {
   if (!supabase) {
     return {
@@ -99,18 +72,15 @@ export async function fetchKegiatan(limit = 200): Promise<KegiatanPayload> {
     }
   }
 
-  const jalankan = async (kolom: string) => {
-    return supabase
-      .from("dokumentasi")
-      .select(kolom)
-      .order("tanggal", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false })
-      .limit(limit)
-  }
-
   let hasil: any
   try {
-    hasil = await jalankan(kolomLengkap)
+    hasil = await supabase
+      .from("kegiatan_internal_kantor")
+      .select(kolomLengkap)
+      .eq("published", true)
+      .order("tanggal_kegiatan", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .limit(limit)
   } catch (e: any) {
     console.error("[kegiatan] gagal memuat:", e?.message ?? e)
     return {
@@ -121,27 +91,15 @@ export async function fetchKegiatan(limit = 200): Promise<KegiatanPayload> {
   }
 
   const kode = hasil.error?.code
-
-  // Tabel belum ada di schema cache Supabase (PGRST204). Mencoba ulang tanpa
-  // kolom unit_kerja tidak akan membantu karena tabel itu sendiri belum ada.
-  // Beri pesan aksi yang jelas agar tabel dibuat via migrasi SQL.
-  if (hasil.error && kode === "PGRST204") {
-    console.error(
-      "[kegiatan] gagal memuat: Tabel public.dokumentasi tidak ditemukan di schema cache Supabase. Jalankan docs/supabase-kegiatan-internal.sql di Supabase SQL Editor.",
-    )
-    return {
-      kegiatan: kegiatanContoh(),
-      sumber: "contoh",
-      catatan:
-        "Tabel dokumentasi belum tersedia di Supabase. Jalankan docs/supabase-kegiatan-internal.sql di Supabase SQL Editor, lalu muat ulang halaman. Menampilkan data contoh.",
-    }
-  }
-
-  // Kolom `unit_kerja` ditambahkan lewat migrasi. Bila migrasi belum dijalankan
-  // atau tabel belum punya kolom itu, ulangi запрос tanpa kolom tersebut.
-  if (hasil.error && (kode === "42703" || kode === "PGRST200")) {
+  if (hasil.error && (kode === "42703" || kode === "PGRST200" || kode === "PGRST204")) {
     try {
-      hasil = await jalankan(kolomTanpaUnitKerja)
+      hasil = await supabase
+        .from("kegiatan_internal_kantor")
+        .select(kolomTanpaRelasi)
+        .eq("published", true)
+        .order("tanggal_kegiatan", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .limit(limit)
     } catch (e: any) {
       console.error("[kegiatan] gagal memuat:", e?.message ?? e)
       return {
@@ -161,14 +119,13 @@ export async function fetchKegiatan(limit = 200): Promise<KegiatanPayload> {
     }
   }
 
-  const kegiatan = (hasil.data as unknown as BarisDokumentasi[]).map(keKegiatan)
+  const kegiatan = ((hasil.data as unknown[]) || []).map(keKegiatan).filter((k) => k.fotoUrl)
+  if (kegiatan.length === 0) {
+    return { kegiatan: [], sumber: "supabase", catatan: null }
+  }
   return { kegiatan, sumber: "supabase", catatan: null }
 }
 
-/**
- * Data contoh supaya halaman tetap punya isi ketika Supabase belum siap.
- * Foto diarahkan ke route placeholder lokal.
- */
 function kegiatanContoh(): Kegiatan[] {
   const contoh: Array<{
     judul: string
@@ -185,7 +142,7 @@ function kegiatanContoh(): Kegiatan[] {
       unit: "Umum",
       foto: 1,
     },
-{
+    {
       judul: "Pemeliharaan Server dan Arsip Digital Kantor",
       keterangan:
         "Pemindahan data arsip kegiatan ke penyimpanan terpusat dan pencadangan perangkat ruang rapat.",
@@ -217,62 +174,6 @@ function kegiatanContoh(): Kegiatan[] {
       unit: "Operasional",
       foto: 5,
     },
-    {
-      judul: "Kampanye Publikasi Program Kantor Semester III",
-      keterangan:
-        "Persiapan materi promosi dan cetak untuk kegiatan eksternal kantor.",
-      tanggal: "2026-06-21",
-      unit: "Pemasaran & Komunikasi",
-      foto: 6,
-    },
-    {
-      judul: "Penandatanganan Kerja Sama Mitra",
-      keterangan:
-        "Serah terima dokumen kerja sama dan Arsip bukti dukung.",
-      tanggal: "2026-06-04",
-      unit: "Legal",
-      foto: 7,
-    },
-    {
-      judul: "Pelatihan Internal Pengadaan Barang dan Jasa",
-      keterangan:
-        "Penyelarasan prosedur pengadaan barang dan jasa di lingkup kantor pusat.",
-      tanggal: "2026-05-19",
-      unit: "Sumber Daya Manusia",
-      foto: 8,
-    },
-    {
-      judul: "Apraisal Aset dan Asuransi Kantor",
-      keterangan:
-        "Pendataan nilai aset dan penyesuaian polis asuransi aset kantor.",
-      tanggal: "2026-05-02",
-      unit: "Keuangan",
-      foto: 9,
-    },
-    {
-      judul: "Audit Sistem dan Pembaruan Akses Pengguna",
-      keterangan:
-        "Evaluasi hak akses aplikasi internal dan penonaktifan akun yang tidak dipakai.",
-      tanggal: "2026-04-15",
-      unit: "Teknologi Informasi",
-      foto: 10,
-    },
-    {
-      judul: "Rapat Kerja Bersama Seluruh Cabang",
-      keterangan:
-        "Sinkronisasi standar layanan dan pelaporan antar cabang.",
-      tanggal: "2026-03-25",
-      unit: "Umum",
-      foto: 11,
-    },
-    {
-      judul: "Penataan Gudang dan Distribusi Perlengkapan",
-      keterangan:
-        "Penataan ulang gudang kantor dan penomoran ulang rak penyimpanan.",
-      tanggal: "2026-03-08",
-      unit: "Operasional",
-      foto: 12,
-    },
   ]
 
   return contoh.map((item, index) => {
@@ -289,3 +190,14 @@ function kegiatanContoh(): Kegiatan[] {
     }
   })
 }
+
+const serviceUrl = process.env.SUPABASE_SERVICE_ROLE_URL ?? url
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+export const isSupabaseAdminConfigured = Boolean(serviceUrl && serviceKey)
+
+export const supabaseAdmin = isSupabaseAdminConfigured
+  ? createClient(serviceUrl as string, serviceKey as string, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+  : null
