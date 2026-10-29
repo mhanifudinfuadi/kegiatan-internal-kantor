@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 /**
  * Landing hero "White Hood Blossoms".
@@ -133,7 +134,7 @@ export default function LandingHero() {
           <span className="hero-baris2">Menyimpan momen</span>
         </h1>
 
-        <a
+        <Link
           href="/dokumentasi"
           onClick={klikCta}
           className="hero-cta"
@@ -154,7 +155,7 @@ export default function LandingHero() {
               <polyline points="12 5 19 12 12 19" />
             </svg>
           </span>
-        </a>
+        </Link>
       </div>
     </main>
   )
