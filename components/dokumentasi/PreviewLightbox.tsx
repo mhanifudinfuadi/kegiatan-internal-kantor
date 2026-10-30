@@ -105,9 +105,12 @@ export default function PreviewLightbox({ items, currentIndex, onClose, onNaviga
     >
       <header className={styles.topbar}>
         <div className={styles.counter}>
-          <span className={styles.counterUnit}>{active.unit}</span>
-          <span>
-            Foto {currentIndex + 1} dari {items.length}
+          <span className={styles.counterMonogatari}>
+            <span className={styles.monogatariMark} aria-hidden="true">物語</span>
+            <span>RAGAM CERITA · {active.unit}</span>
+          </span>
+          <span className={styles.counterIndex}>
+            写真 {currentIndex + 1} / {items.length}
           </span>
         </div>
 
@@ -171,6 +174,7 @@ export default function PreviewLightbox({ items, currentIndex, onClose, onNaviga
           <figcaption className={styles.caption}>
             <h2 className={styles.captionTitle}>{active.title}</h2>
             <p className={styles.captionMeta}>
+              <span className={styles.captionJp} aria-hidden="true">活動物語 ·</span>
               {active.unit} {active.date ? `· ${active.date}` : ""}
             </p>
           </figcaption>

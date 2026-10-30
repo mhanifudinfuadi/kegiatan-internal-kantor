@@ -82,10 +82,10 @@ export default async function DokumentasiUnitPage({ params }: { params: Promise<
           <span className={styles.jp}>· 活動記録</span>
         </div>
         <div className={styles.introHeader}>
-          <p className={styles.kicker}>UNIT KERJA · {target.nama.toUpperCase()}</p>
-          <h1 id="unit-title">Arsip {target.nama}</h1>
+          <p className={styles.kicker}>RAGAM CERITA · 物語 {target.nama.toUpperCase()}</p>
+          <h1 id="unit-title">Kisah {target.nama}</h1>
           <div className={styles.metaRow}>
-            <span>{items.length} Kegiatan</span>
+            <span>{items.length} Agenda</span>
             <span>
               {items.reduce((total, item) => {
                 const count = (item.fotoUrls && item.fotoUrls.length > 0)
@@ -141,7 +141,7 @@ export default async function DokumentasiUnitPage({ params }: { params: Promise<
 
       <div className={styles.backRow}>
         <Link href="/dokumentasi" className={styles.backLink}>
-          <span aria-hidden="true">←</span> Kembali ke daftar unit
+          <span aria-hidden="true">←</span> Kembali ke ragam cerita
         </Link>
       </div>
 

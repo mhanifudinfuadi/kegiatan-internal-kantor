@@ -89,12 +89,12 @@ export default async function DokumentasiPage() {
               <br />
               <em>setiap kebersamaan.</em>
             </h1>
-            <p className={styles.lede}>Jelajahi dokumentasi kegiatan internal dari setiap unit kerja.</p>
+            <p className={styles.lede}>Jelajahi ragam cerita dan monogatari dari setiap jenis kegiatan internal kantor.</p>
           </div>
           <div className={styles.readouts} aria-label="Ringkasan dokumentasi">
             <div>
               <span>
-                Unit kerja <i>部署</i>
+                Ragam cerita <i>物語</i>
               </span>
               <strong>{String(daftarUnit.length).padStart(2, "0")}</strong>
             </div>
@@ -115,10 +115,10 @@ export default async function DokumentasiPage() {
         <div className={styles.sectionHeading}>
           <div>
             <span className={styles.sectionIndex}>01 / DIREKTORI</span>
-            <h2>Unit kerja</h2>
+            <h2>Ragam cerita</h2>
           </div>
           <p>
-            Pilih unit untuk melihat seluruh catatan kegiatannya <span aria-hidden="true">↓</span>
+            Pilih cerita kegiatan untuk melihat seluruh catatan kenangannya <span aria-hidden="true">↓</span>
           </p>
         </div>
       </section>
@@ -130,7 +130,7 @@ export default async function DokumentasiPage() {
       )}
 
       {daftarUnit.length ? (
-        <section className={styles.unitGrid} aria-label="Daftar unit kerja">
+        <section className={styles.unitGrid} aria-label="Daftar ragam cerita kegiatan">
           {daftarUnit.map((unit, index) => (
             <Link key={unit.slug} href={`/dokumentasi/${unit.slug}`} className={styles.unitCard}>
               <div className={styles.cover}>
@@ -155,7 +155,7 @@ export default async function DokumentasiPage() {
               </div>
               <div className={styles.unitInfo}>
                 <span className={styles.unitKicker}>
-                  UNIT KERJA <span>· {String(index + 1).padStart(2, "0")}</span>
+                  RAGAM CERITA <span>· 物語 {String(index + 1).padStart(2, "0")}</span>
                 </span>
                 <h3>{unit.nama}</h3>
                 <p className={styles.latestDate}>{formatTanggal(unit.terbaru?.tanggal ?? null)}</p>
