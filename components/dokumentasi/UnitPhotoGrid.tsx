@@ -34,27 +34,25 @@ export default function UnitPhotoGrid({ photos, itemJudul }: Props) {
   return (
     <>
       <div
-        className={`${styles.photoGrid} ${
-          photos.length === 1
+        className={`${styles.photoGrid} ${photos.length === 1
             ? styles.photoGridSingle
             : photos.length === 2
-            ? styles.photoGridTwo
-            : photos.length === 3
-            ? styles.photoGridThree
-            : styles.photoGridMany
-        }`}
+              ? styles.photoGridTwo
+              : photos.length === 3
+                ? styles.photoGridThree
+                : styles.photoGridMany
+          }`}
       >
         {photos.map((photo, idx) => {
           return (
             <figure
               key={`${photo.src}-${idx}`}
-              className={`${styles.photoCard} ${
-                photos.length === 1
+              className={`${styles.photoCard} ${photos.length === 1
                   ? styles.photoCardLarge
                   : photo.isFirstHero
-                  ? styles.photoCardHero
-                  : ""
-              }`}
+                    ? styles.photoCardHero
+                    : ""
+                }`}
               onClick={() => setLightboxIndex(idx)}
               role="button"
               tabIndex={0}
