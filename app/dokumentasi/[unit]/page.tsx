@@ -2,6 +2,7 @@ import Link from "next/link";
 import { fetchKegiatan } from "@/lib/supabase";
 import { normalisasiUnitKerja } from "@/lib/unit-kerja";
 import type { Kegiatan } from "@/lib/types";
+import UnitPhotoGrid from "@/components/dokumentasi/UnitPhotoGrid";
 import styles from "@/components/dokumentasi/DokumentasiUnit.module.css";
 
 function formatTanggalLengkap(value: string | null) {
@@ -119,45 +120,18 @@ export default async function DokumentasiUnitPage({ params }: { params: Promise<
                 </header>
                 {item.keterangan && <p className={styles.keterangan}>{item.keterangan}</p>}
                 {photos.length > 0 && (
-                  <div
-                    className={`${styles.photoGrid} ${
-                      photos.length === 1
-                        ? styles.photoGridSingle
-                        : photos.length === 2
-                        ? styles.photoGridTwo
-                        : photos.length === 3
-                        ? styles.photoGridThree
-                        : styles.photoGridMany
-                    }`}
-                  >
-                    {photos.map((src, idx) => {
-                      const isFirstHero = photos.length > 2 && idx === 0;
-                      return (
-                        <figure
-                          key={`${item.id}-foto-${idx}`}
-                          className={`${styles.photoCard} ${
-                            photos.length === 1
-                              ? styles.photoCardLarge
-                              : isFirstHero
-                              ? styles.photoCardHero
-                              : ""
-                          }`}
-                        >
-                          <img
-                            src={src}
-                            alt={`${item.judul} - foto ${idx + 1} dari ${photos.length}`}
-                            loading="lazy"
-                            decoding="async"
-                          />
-                          {photos.length > 1 && (
-                            <span className={styles.photoIndexBadge} aria-label={`Foto ${idx + 1} dari ${photos.length}`}>
-                              {idx + 1} / {photos.length}
-                            </span>
-                          )}
-                        </figure>
-                      );
-                    })}
-                  </div>
+                  <UnitPhotoGrid
+                    itemJudul={item.judul}
+                    photos={photos.map((src, idx) => ({
+                      src,
+                      title: photos.length > 1 ? `${item.judul} (#${idx + 1})` : item.judul,
+                      unit: target.nama,
+                      date: formatTanggalLengkap(item.tanggal || item.createdAt),
+                      isFirstHero: photos.length > 2 && idx === 0,
+                      total: photos.length,
+                      overallIndex: idx,
+                    }))}
+                  />
                 )}
               </div>
             </article>

@@ -5,6 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import AudioPlayer from "@/components/AudioPlayer";
 
 function collectPhotosFromData(data) {
+  if (data && Array.isArray(data.items) && data.items.length > 0) {
+    return data.items;
+  }
   var units = data && data.units ? data.units : [];
   var items = [];
   for (var u = 0; u < units.length; u++) {
@@ -49,7 +52,7 @@ export default function TalksShowcasePage() {
       } catch (e) {}
     }
     load();
-    var iv = setInterval(load, 15000);
+    var iv = setInterval(load, 5000);
     return function() { mounted = false; clearInterval(iv); };
   }, []);
 

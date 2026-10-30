@@ -9,30 +9,58 @@ export async function GET() {
   try {
     const payload = await fetchKegiatan(500);
     const kegiatan = payload.kegiatan || [];
-    const photos = [];
-    
+    const photos: string[] = [];
+    const items: Array<{ id: string; title: string; date: string; unit: string; src: string; tag: string }> = [];
+
     for (let i = 0; i < kegiatan.length; i++) {
       const k = kegiatan[i];
-      if (k.fotoUrl) {
-        photos.push(k.fotoUrl);
+      const urls = (k.fotoUrls && k.fotoUrls.length > 0)
+        ? k.fotoUrls
+        : (k.fotoUrl ? [k.fotoUrl] : []);
+
+      for (let j = 0; j < urls.length; j++) {
+        const src = urls[j];
+        if (src && !photos.includes(src)) {
+          photos.push(src);
+          items.push({
+            id: `kegiatan-${k.id}-${j}`,
+            title: urls.length > 1 ? `${k.judul} (#${j + 1})` : k.judul,
+            date: k.tanggal || "",
+            unit: k.unitKerja || "",
+            src: src,
+            tag: (k.unitKerja || "DOKUMENTASI").toUpperCase(),
+          });
+        }
       }
     }
-    
+
     if (photos.length > 0) {
-      const items = photos.map((src, idx) => ({
-        id: "supabase-" + idx,
-        title: kegiatan.find((x: any) => x.fotoUrl === src)?.judul || "Dokumentasi",
-        date: kegiatan.find((x: any) => x.fotoUrl === src)?.tanggal || "",
-        unit: kegiatan.find((x: any) => x.fotoUrl === src)?.unitKerja || "",
-        src: src
-      }));
-      
-      return NextResponse.json({ units: [{ slug: "all", nama: "Semua", kegiatan: [{ id: "all", judul: "Dokumentasi", tanggal: "", deskripsi: "", foto: photos }] }] }, {
-        status: 200,
-        headers: {
-          "Cache-Control": "no-store, must-revalidate"
-        }
-      });
+      return NextResponse.json(
+        {
+          units: [
+            {
+              slug: "all",
+              nama: "Semua",
+              kegiatan: [
+                {
+                  id: "all",
+                  judul: "Dokumentasi",
+                  tanggal: "",
+                  deskripsi: "",
+                  foto: photos,
+                },
+              ],
+            },
+          ],
+          items,
+        },
+        {
+          status: 200,
+          headers: {
+            "Cache-Control": "no-store, must-revalidate",
+          },
+        },
+      );
     }
   } catch (e) {}
   

@@ -267,12 +267,47 @@
   aspect-ratio: 4 / 3;
   background: rgba(247, 230, 239, 0.4);
   box-shadow: 0 40px 70px -50px rgba(124, 74, 96, 0.35);
+  cursor: pointer;
   transition: transform 220ms ease, box-shadow 220ms ease;
 }
 
 .photoCard:hover {
   transform: translateY(-4px);
-  box-shadow: 0 50px 80px -50px rgba(124, 74, 96, 0.45);
+  box-shadow: 0 50px 80px -50px rgba(124, 74, 96, 0.55);
+}
+
+.photoCard:hover .photoOverlayBadge {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.photoOverlayBadge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.92);
+  opacity: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  background: rgba(20, 15, 22, 0.82);
+  border: 1px solid rgba(255, 208, 224, 0.45);
+  color: #ffffff;
+  font-size: 0.76rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+  transition: opacity 200ms ease, transform 200ms ease;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.photoZoomIcon {
+  display: grid;
+  place-items: center;
+  color: #ffd0e0;
 }
 
 .photoCard img {

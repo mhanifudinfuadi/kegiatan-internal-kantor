@@ -1,15 +1,28 @@
 import { fetchKegiatan } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 export default async function GaleriPage() {
   const { kegiatan } = await fetchKegiatan(500);
-  const photos = kegiatan
-    .filter((item) => item.fotoUrl)
-    .map((item) => ({
-      src: item.fotoUrl!,
-      unit: item.unitKerja,
-      title: item.judul,
-      tanggal: item.tanggal ?? "",
-    }));
+  const photos: Array<{ src: string; unit: string; title: string; tanggal: string }> = [];
+
+  for (const item of kegiatan) {
+    const urls = (item.fotoUrls && item.fotoUrls.length > 0)
+      ? item.fotoUrls
+      : (item.fotoUrl ? [item.fotoUrl] : []);
+
+    for (let j = 0; j < urls.length; j++) {
+      const src = urls[j];
+      if (src) {
+        photos.push({
+          src,
+          unit: item.unitKerja,
+          title: urls.length > 1 ? `${item.judul} (#${j + 1})` : item.judul,
+          tanggal: item.tanggal ?? "",
+        });
+      }
+    }
+  }
 
   return (
     <main style={{ minHeight: "100vh", background: "linear-gradient(180deg,#f6e9ef,#efd9e1)", padding: "6rem 2rem 4rem", color: "#3a2631" }}>

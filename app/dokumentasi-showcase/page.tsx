@@ -1,16 +1,29 @@
 import Link from "next/link";
 import { fetchKegiatan } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 export default async function DokumentasiShowcasePage() {
   const { kegiatan } = await fetchKegiatan(500);
-  const all = kegiatan
-    .filter((k) => k.fotoUrl)
-    .map((k) => ({
-      src: k.fotoUrl!,
-      unit: k.unitKerja,
-      title: k.judul,
-      tanggal: k.tanggal ?? "",
-    }));
+  const all: Array<{ src: string; unit: string; title: string; tanggal: string }> = [];
+
+  for (const k of kegiatan) {
+    const urls = (k.fotoUrls && k.fotoUrls.length > 0)
+      ? k.fotoUrls
+      : (k.fotoUrl ? [k.fotoUrl] : []);
+
+    for (let j = 0; j < urls.length; j++) {
+      const src = urls[j];
+      if (src) {
+        all.push({
+          src,
+          unit: k.unitKerja,
+          title: urls.length > 1 ? `${k.judul} (#${j + 1})` : k.judul,
+          tanggal: k.tanggal ?? "",
+        });
+      }
+    }
+  }
 
   return (
     <main style={{ minHeight: "100dvh", background: "linear-gradient(180deg,#f6e9ef,#efd9e1)", color: "#3a2631", position: "relative", overflow: "hidden" }}>
