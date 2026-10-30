@@ -6,6 +6,7 @@ export type Kegiatan = {
   unitKerja: string
   unitKerjaSlug: string
   fotoUrl: string | null
+  fotoUrls?: string[]
   createdAt: string
 }
 

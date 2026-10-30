@@ -252,7 +252,11 @@
 .photoGrid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  gap: clamp(0.8rem, 3vw, 1.2rem);
+  gap: clamp(0.8rem, 2.4vw, 1.2rem);
+}
+
+.photoGridMany {
+  grid-auto-flow: dense;
 }
 
 .photoCard {
@@ -261,18 +265,47 @@
   border-radius: 1.2rem;
   overflow: hidden;
   aspect-ratio: 4 / 3;
-  box-shadow: 0 60px 90px -80px rgba(124, 74, 96, 0.4);
+  background: rgba(247, 230, 239, 0.4);
+  box-shadow: 0 40px 70px -50px rgba(124, 74, 96, 0.35);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.photoCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 50px 80px -50px rgba(124, 74, 96, 0.45);
 }
 
 .photoCard img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .photoCardLarge {
   grid-column: 1 / -1;
   aspect-ratio: 16 / 9;
+}
+
+.photoCardHero {
+  grid-column: 1 / -1;
+  aspect-ratio: 16 / 9;
+}
+
+.photoIndexBadge {
+  position: absolute;
+  bottom: 0.8rem;
+  right: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(26, 26, 46, 0.65);
+  color: #ffffff;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  font-family: var(--font-body), system-ui, sans-serif;
 }
 
 .backRow {

@@ -46,7 +46,12 @@ export default async function DokumentasiPage() {
     }))
     .sort((a, b) => a.nama.localeCompare(b.nama));
 
-  const jumlahFoto = kegiatan.filter((item) => item.fotoUrl).length;
+  const jumlahFoto = kegiatan.reduce((total, item) => {
+    const count = (item.fotoUrls && item.fotoUrls.length > 0)
+      ? item.fotoUrls.length
+      : (item.fotoUrl ? 1 : 0);
+    return total + count;
+  }, 0);
 
   return (
     <main className={styles.page}>

@@ -85,14 +85,27 @@ export default async function DokumentasiUnitPage({ params }: { params: Promise<
           <h1 id="unit-title">Arsip {target.nama}</h1>
           <div className={styles.metaRow}>
             <span>{items.length} Kegiatan</span>
-            <span>{items.filter((item) => safePhotoUrl(item.fotoUrl)).length} Foto</span>
+            <span>
+              {items.reduce((total, item) => {
+                const count = (item.fotoUrls && item.fotoUrls.length > 0)
+                  ? item.fotoUrls.filter((u) => Boolean(safePhotoUrl(u))).length
+                  : (safePhotoUrl(item.fotoUrl) ? 1 : 0);
+                return total + count;
+              }, 0)}{" "}
+              Foto
+            </span>
           </div>
         </div>
       </section>
 
       <section className={styles.timeline} aria-label="Timeline kegiatan">
         {items.map((item) => {
-          const photos = [safePhotoUrl(item.fotoUrl)].filter(Boolean) as string[];
+          const rawPhotos = (item.fotoUrls && item.fotoUrls.length > 0)
+            ? item.fotoUrls
+            : [item.fotoUrl];
+          const photos = rawPhotos
+            .map(safePhotoUrl)
+            .filter((p): p is string => Boolean(p));
           return (
             <article key={item.id} className={styles.event}>
               <div className={styles.dateColumn}>
@@ -106,15 +119,44 @@ export default async function DokumentasiUnitPage({ params }: { params: Promise<
                 </header>
                 {item.keterangan && <p className={styles.keterangan}>{item.keterangan}</p>}
                 {photos.length > 0 && (
-                  <div className={styles.photoGrid}>
-                    {photos.map((src, idx) => (
-                      <figure
-                        key={idx}
-                        className={`${styles.photoCard} ${photos.length === 1 ? styles.photoCardLarge : ""}`}
-                      >
-                        <img src={src} alt={`${item.judul} - foto ${idx + 1}`} loading="lazy" decoding="async" />
-                      </figure>
-                    ))}
+                  <div
+                    className={`${styles.photoGrid} ${
+                      photos.length === 1
+                        ? styles.photoGridSingle
+                        : photos.length === 2
+                        ? styles.photoGridTwo
+                        : photos.length === 3
+                        ? styles.photoGridThree
+                        : styles.photoGridMany
+                    }`}
+                  >
+                    {photos.map((src, idx) => {
+                      const isFirstHero = photos.length > 2 && idx === 0;
+                      return (
+                        <figure
+                          key={`${item.id}-foto-${idx}`}
+                          className={`${styles.photoCard} ${
+                            photos.length === 1
+                              ? styles.photoCardLarge
+                              : isFirstHero
+                              ? styles.photoCardHero
+                              : ""
+                          }`}
+                        >
+                          <img
+                            src={src}
+                            alt={`${item.judul} - foto ${idx + 1} dari ${photos.length}`}
+                            loading="lazy"
+                            decoding="async"
+                          />
+                          {photos.length > 1 && (
+                            <span className={styles.photoIndexBadge} aria-label={`Foto ${idx + 1} dari ${photos.length}`}>
+                              {idx + 1} / {photos.length}
+                            </span>
+                          )}
+                        </figure>
+                      );
+                    })}
                   </div>
                 )}
               </div>
