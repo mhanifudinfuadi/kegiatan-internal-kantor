@@ -175,9 +175,9 @@ export default function TalksShowcasePage() {
         </nav>
       </header>
       <section style={{ maxWidth: 1180, margin: "0 auto", padding: "52px 24px 24px", textAlign: "center" }}>
-        <div style={{ fontSize: 11, letterSpacing: ".28em", color: "#f29bbd", textTransform: "uppercase" }}>ROMANCE · JAPANESE CYBER VIBE</div>
+        <div style={{ fontSize: 11, letterSpacing: ".28em", color: "#f29bbd", textTransform: "uppercase" }}>MONO NO AWARE · JEJAK YANG BERLALU</div>
         <h1 style={{ font: "400 clamp(36px,5.2vw,64px)/1.08 'Shippori Mincho',serif", margin: "14px auto 16px", maxWidth: 880 }}>The Work, <span style={{ color: "#ffc5dc", fontStyle: "italic" }}>The Moments</span>, and <span style={{ color: "#ffc5dc", fontStyle: "italic" }}>in Between</span></h1>
-        <p style={{ color: "#d9b5c6", maxWidth: 720, margin: "0 auto", lineHeight: 1.9, fontSize: 15 }}>Foto mengalir penuh dari kanan. Saat melewati garis pemindai, momen itu terurai menjadi aksara Jepang yang berkilau, menyisakan jejak kenangan yang abadi.</p>
+        <p style={{ color: "#d9b5c6", maxWidth: 720, margin: "0 auto", lineHeight: 1.9, fontSize: 15 }}>Seperti kabut di pagi hari, setiap momen berlalu begitu saja. Namun, jejaknya tetap tersisa—halus, sunyi, namun tak terhapuskan.</p>
       </section>
       <section ref={stageRef} style={{ position: "relative", height: "clamp(400px,58vw,560px)", margin: "28px 0 0", overflow: "hidden", isolation: "isolate" }}>
         <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 3, background: "linear-gradient(90deg,rgba(12,8,13,0.9) 0%,transparent 16%,transparent 84%,rgba(12,8,13,0.9) 100%)" }} />
