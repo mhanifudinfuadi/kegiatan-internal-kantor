@@ -1,9 +1,14 @@
 import Link from "next/link";
+import { unstable_noStore as noStore } from "next/cache";
 import { fetchKegiatan } from "@/lib/supabase";
 import { normalisasiUnitKerja } from "@/lib/unit-kerja";
 import type { Kegiatan } from "@/lib/types";
 import StoryCard from "@/components/dokumentasi/StoryCard";
 import styles from "@/components/dokumentasi/DokumentasiIndex.module.css";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 type RingkasanUnit = {
   slug: string;
@@ -17,10 +22,11 @@ function semuaFoto(item: Kegiatan): string[] {
   const daftar = (item.fotoUrls && item.fotoUrls.length > 0 ? item.fotoUrls : [item.fotoUrl])
     .map((url) => (url ?? "").trim())
     .filter(Boolean);
-  return Array.from(new Set(daftar));
+  return daftar;
 }
 
 export default async function DokumentasiPage() {
+  noStore();
   const { catatan, kegiatan } = await fetchKegiatan(500);
   const units = new Map<string, RingkasanUnit>();
 

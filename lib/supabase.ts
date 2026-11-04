@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from "next/cache"
 import { createClient } from "@supabase/supabase-js"
 import { normalisasiUnitKerja } from "@/lib/unit-kerja"
 import type { Kegiatan, KegiatanPayload } from "@/lib/types"
@@ -87,15 +88,13 @@ function keKegiatan(baris: any, storageFiles?: StorageFileItem[]): Kegiatan {
   let fotoUrls = ekstrakFotoDariBaris(baris)
 
   // 4. Fallback storage batch matching:
-  // Bila database hanya mencatat 1 foto utama (karena admin mengunggah multi-foto ke bucket
-  // storage "dokumentasi" sebelum kolom multi-foto tersedia di skema), cocokkan berkas
-  // di bucket yang diunggah dalam batch waktu yang sama dengan baris kegiatan ini.
-  if (fotoUrls.length <= 1 && storageFiles && storageFiles.length > 0 && supabase) {
+  // Cocokkan berkas di bucket yang diunggah dalam batch waktu yang sama dengan baris kegiatan ini.
+  // Jika batch di bucket lebih lengkap, pakai batch sebagai sumber utama agar semua foto terbawa.
+  if (storageFiles && storageFiles.length > 0 && supabase) {
     const rowTime = baris.created_at ? new Date(baris.created_at).getTime() : 0
     const primaryPath = (baris.image_path ?? "").trim()
 
     if (rowTime > 0) {
-      // Toleransi 90 detik sebelum/sesudah created_at kegiatan
       const batch = storageFiles
         .filter((f) => {
           const fTime = new Date(f.created_at).getTime()
@@ -103,11 +102,10 @@ function keKegiatan(baris: any, storageFiles?: StorageFileItem[]): Kegiatan {
         })
         .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
 
-      if (batch.length > 1) {
+      if (batch.length > 0) {
         const batchUrls = batch.map((f) =>
           supabase!.storage.from(DOKUMENTASI_BUCKET).getPublicUrl(f.name).data.publicUrl,
         )
-        // Pastikan foto utama berada paling depan jika terdaftar
         if (primaryPath) {
           const idx = batch.findIndex((f) => f.name === primaryPath)
           if (idx > 0) {
@@ -115,7 +113,14 @@ function keKegiatan(baris: any, storageFiles?: StorageFileItem[]): Kegiatan {
             batchUrls.unshift(mainUrl)
           }
         }
-        fotoUrls = batchUrls
+        if (batchUrls.length > fotoUrls.length || fotoUrls.length <= 1) {
+          fotoUrls = batchUrls
+        } else {
+          const merged = [...new Set([...fotoUrls, ...batchUrls])]
+          if (merged.length > fotoUrls.length) {
+            fotoUrls = merged
+          }
+        }
       }
     }
   }
@@ -136,7 +141,8 @@ function keKegiatan(baris: any, storageFiles?: StorageFileItem[]): Kegiatan {
   }
 }
 
-export async function fetchKegiatan(limit = 200): Promise<KegiatanPayload> {
+export async function fetchKegiatan(limit = 500): Promise<KegiatanPayload> {
+  noStore();
   if (!supabase) {
     return {
       kegiatan: kegiatanContoh(),
@@ -211,25 +217,31 @@ export async function fetchKegiatan(limit = 200): Promise<KegiatanPayload> {
 
   // Periksa apakah baris memiliki multi-foto langsung
   const barisData = ((hasil.data as unknown[]) || []) as any[]
-  let butuhStorageFallback = false
-  for (const b of barisData) {
-    const directPhotos = ekstrakFotoDariBaris(b)
-    if (directPhotos.length <= 1) {
-      butuhStorageFallback = true
-      break
-    }
-  }
+  let butuhStorageFallback = true
 
   let storageFiles: StorageFileItem[] = []
   if (butuhStorageFallback && supabase) {
     try {
-      const storageRes = await supabase.storage.from(DOKUMENTASI_BUCKET).list("", { limit: 100 })
-      if (storageRes.data) {
-        storageFiles = storageRes.data.map((f) => ({
-          name: f.name,
-          created_at: f.created_at,
-        }))
+      const allFiles: StorageFileItem[] = []
+      let offset = 0
+      const pageSize = 1000
+      while (true) {
+        const storageRes = await supabase.storage
+          .from(DOKUMENTASI_BUCKET)
+          .list("", { limit: pageSize, offset })
+        if (storageRes.error) break
+        if (!storageRes.data || storageRes.data.length === 0) break
+        for (const f of storageRes.data) {
+          allFiles.push({
+            name: f.name,
+            created_at: f.created_at,
+          })
+        }
+        if (storageRes.data.length < pageSize) break
+        offset += pageSize
+        if (offset > 5000) break // safety
       }
+      storageFiles = allFiles
     } catch (err) {
       console.warn("[kegiatan] tidak dapat membaca bucket dokumentasi:", err)
     }

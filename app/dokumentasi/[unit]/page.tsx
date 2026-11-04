@@ -1,9 +1,14 @@
 import Link from "next/link";
+import { unstable_noStore as noStore } from "next/cache";
 import { fetchKegiatan } from "@/lib/supabase";
 import { normalisasiUnitKerja } from "@/lib/unit-kerja";
 import type { Kegiatan } from "@/lib/types";
 import UnitPhotoGrid from "@/components/dokumentasi/UnitPhotoGrid";
 import styles from "@/components/dokumentasi/DokumentasiUnit.module.css";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 function formatTanggalLengkap(value: string | null) {
   if (!value) return "Tanggal belum dicatat";
@@ -38,30 +43,17 @@ function safePhotoUrl(url: string | null) {
 }
 
 export default async function DokumentasiUnitPage({ params }: { params: Promise<{ unit: string }> }) {
+  noStore();
   const { unit } = await params;
-  const { kegiatan } = await fetchKegiatan();
+  const { kegiatan } = await fetchKegiatan(500);
   const target = normalisasiUnitKerja(decodeURIComponent(unit).replace(/-/g, " "));
-  const semuaItem = kegiatan
+  const items = kegiatan
     .filter((item) => normalisasiUnitKerja(item.unitKerja).slug === target.slug)
     .sort((a, b) => {
       const ta = a.tanggal || a.createdAt;
       const tb = b.tanggal || b.createdAt;
       return tb.localeCompare(ta);
     });
-
-  // Satu ragam cerita tampil sekali saja dengan versi terbaru (foto yang paling
-  // akhir diperbarui). Versi lama dengan judul yang sama disembunyikan supaya
-  // card tidak menampilkan foto lama hanya karena update terakhir.
-  const terbaruPerJudul = (daftar: Kegiatan[]) => {
-    const terlihat = new Set<string>();
-    return daftar.filter((item) => {
-      const kunci = item.judul.trim().toLowerCase();
-      if (terlihat.has(kunci)) return false;
-      terlihat.add(kunci);
-      return true;
-    });
-  };
-  const items = terbaruPerJudul(semuaItem);
 
   return (
     <main className={styles.page}>
