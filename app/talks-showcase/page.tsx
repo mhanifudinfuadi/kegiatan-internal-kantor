@@ -2,219 +2,290 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import AudioPlayer from "@/components/AudioPlayer";
 
-function collectPhotosFromData(data) {
-  if (data && Array.isArray(data.items) && data.items.length > 0) {
-    return data.items;
-  }
-  var units = data && data.units ? data.units : [];
-  var items = [];
-  for (var u = 0; u < units.length; u++) {
-    var unit = units[u];
-    var kegiatan = unit.kegiatan || [];
-    for (var k = 0; k < kegiatan.length; k++) {
-      var keg = kegiatan[k];
-      var fotos = keg.foto || [];
-      if (fotos.length > 0) {
-        for (var i = 0; i < fotos.length; i++) {
-          items.push({
-            id: (keg.id || u + "-" + k) + "-" + i,
-            title: keg.judul || "Dokumentasi",
-            date: keg.tanggal || "",
-            unit: unit.nama || unit.slug || "",
-            src: fotos[i],
-            tag: (unit.nama || "Dokumentasi").toUpperCase()
-          });
-        }
-      }
-    }
-  }
-  return items;
+const GLYPHS = "桜花月雪京炎鋼刃水火空心和道未来電脳夜風雲龍光夢";
+
+type PhotoItem = {
+  key: string;
+  image: string;
+  title: string;
+  date: string;
+  unit: string;
+  category: string;
+};
+
+function buildScanCards(activities: any[]): PhotoItem[] {
+  const photos: PhotoItem[] = [];
+  activities.forEach((act: any) => {
+    const list = act.fotoUrls && act.fotoUrls.length > 0 ? act.fotoUrls : act.fotoUrl ? [act.fotoUrl] : [];
+    list.forEach((image: string, idx: number) => {
+      if (!image) return;
+      photos.push({
+        key: `${act.id}-foto-${idx}`,
+        image,
+        title: act.judul || "Dokumentasi",
+        date: act.tanggal || "",
+        unit: act.unitKerja || "",
+        category: (act.unitKerja || "DOKUMENTASI").toUpperCase(),
+      });
+    });
+  });
+  return photos;
+}
+
+function formatTanggal(dateStr: string): string {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 }
 
 export default function TalksShowcasePage() {
-  var [items, setItems] = useState([]);
-  var trackRef = useRef(null);
-  var stageRef = useRef(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const beamRef = useRef<HTMLDivElement>(null);
+  const [items, setItems] = useState<PhotoItem[]>([]);
+  const [isHovering, setIsHovering] = useState(false);
+  const [status, setStatus] = useState<"idle" | "scanning" | "paused">("idle");
+  const [reduced, setReduced] = useState(false);
+  const rafRef = useRef<number | null>(null);
+  const positionRef = useRef(0);
 
-  useEffect(function() {
-    var mounted = true;
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduced(mq.matches);
+    const onChange = () => setReduced(mq.matches);
+    mq.addEventListener?.("change", onChange);
+    return () => mq.removeEventListener?.("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
     async function load() {
       try {
-        var res = await fetch("/api/preview-photos", { cache: "no-store" });
+        const res = await fetch("/api/kegiatan", { cache: "no-store" });
         if (!res.ok) return;
-        var json = await res.json();
-        if (mounted) {
-          var collected = collectPhotosFromData(json);
-          if (collected.length > 0) setItems(collected);
+        const json = await res.json();
+        if (mounted && json?.kegiatan) {
+          const cards = buildScanCards(json.kegiatan);
+          setItems(cards);
         }
       } catch (e) {}
     }
     load();
-    var iv = setInterval(load, 5000);
-    return function() { mounted = false; clearInterval(iv); };
+    const iv = setInterval(load, 5000);
+    return () => {
+      mounted = false;
+      clearInterval(iv);
+    };
   }, []);
 
-  useEffect(function() {
-    if (items.length === 0) return;
-    var track = trackRef.current;
-    var stage = stageRef.current;
-    if (!track || !stage) return;
-    track.innerHTML = '';
-    var original = [];
-    for (var i = 0; i < items.length; i++) {
-      var it = items[i];
-      var card = document.createElement('article');
-      card.className = 'card';
-      var glyphs = '';
-      for (var g = 0; g < 130; g++) {
-        glyphs += '<span></span>';
-      }
-      card.innerHTML = '<div class="chip"></div><div class="photo-wrap" style="--photo-fill:url(\'' + it.src.replace(/'/g, "\\'") + '\')"><div class="photo" style="background-image:url(' + it.src.replace(/'/g, "\\'") + ')"></div></div><div class="glyphs">' + glyphs + '</div><div class="info"><div class="tag">' + (i+1).toString().padStart(2,'0') + ' / ' + it.tag + '</div><h2>' + it.title.replace(/</g,'&lt;') + '</h2><p>' + it.unit + ' • ' + it.date + '</p></div>';
-      track.appendChild(card);
-      original.push(card);
-    }
-    for (var c = 0; c < original.length; c++) {
-      track.appendChild(original[c].cloneNode(true));
-    }
-    var cards = Array.prototype.slice.call(track.querySelectorAll('.card'));
-    var codeChars = '桜光夢風雲龍水火空心和道未来電脳夜花月雪京炎鋼刃森海星風景あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんアイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
-    for (var ci = 0; ci < cards.length; ci++) {
-      if (!cards[ci].querySelector('.scan-edge')) {
-        var edge = document.createElement('span');
-        edge.className = 'scan-edge';
-        cards[ci].appendChild(edge);
-      }
-      var spans = cards[ci].querySelectorAll('.glyphs span');
-      for (var si = 0; si < spans.length; si++) {
-        spans[si].textContent = codeChars[Math.floor(Math.random() * codeChars.length)];
+  const updateDissolve = (track: HTMLElement) => {
+    const stage = track.parentElement;
+    if (!stage) return;
+    const beamX = stage.getBoundingClientRect().left + stage.clientWidth / 2;
+    const cards = track.children;
+    for (let i = 0; i < cards.length; i++) {
+      const card = cards[i] as HTMLElement;
+      const rect = card.getBoundingClientRect();
+      const lewat = (beamX - rect.right) / Math.max(rect.width, 1);
+      const progress = Math.min(Math.max(lewat, 0), 1);
+      const prev = card.dataset.dissolve;
+      const next = progress.toFixed(3);
+      if (prev !== next) {
+        card.dataset.dissolve = next;
+        card.style.setProperty("--scan", next);
+        card.classList.toggle("is-dissolving", progress > 0);
+        card.classList.toggle("is-gone", progress >= 1);
       }
     }
-    var speed = 55, paused = false, last = 0, offset = 0, hover = false;
-    function cardWidth() { return cards[0] ? cards[0].getBoundingClientRect().width : 280; }
-    function gapSize() { var st = getComputedStyle(track); return parseFloat(st.gap) || 40; }
-    function loopWidth() { return original.length * (cardWidth() + gapSize()); }
-    stage.addEventListener('pointerenter', function(){ hover = true; });
-    stage.addEventListener('pointerleave', function(){ hover = false; });
-    var toggleBtn = document.getElementById('toggle');
-    var slowerBtn = document.getElementById('slower');
-    var fasterBtn = document.getElementById('faster');
-    var speedEl = document.getElementById('speed');
-    if (toggleBtn) toggleBtn.onclick = function(){ paused = !paused; toggleBtn.textContent = paused ? 'Lanjutkan animasi' : 'Jeda animasi'; if (!paused) last = 0; };
-    if (slowerBtn) slowerBtn.onclick = function(){ speed = Math.max(15, speed - 10); if (speedEl) speedEl.textContent = speed + ' px/detik'; };
-    if (fasterBtn) fasterBtn.onclick = function(){ speed = Math.min(100, speed + 10); if (speedEl) speedEl.textContent = speed + ' px/detik'; };
-    function frame(t) {
-      if (!last) last = t;
-      var dt = Math.min((t - last) / 1000, 0.04);
-      last = t;
-      if (!paused) {
-        offset -= speed * (hover ? 0.35 : 1) * dt;
-        var lw = loopWidth();
-        if (offset <= -lw) offset += lw;
-        track.style.transform = 'translate3d(' + offset + 'px,-50%,0)';
-      }
-      var beamX = stage.getBoundingClientRect().left + stage.clientWidth * 0.5;
-      for (var k = 0; k < cards.length; k++) {
-        var card = cards[k];
-        var rect = card.getBoundingClientRect();
-        var progress = Math.max(0, Math.min(1, (beamX - rect.left) / rect.width));
-        var photo = card.querySelector('.photo');
-        photo.style.clipPath = 'inset(0 ' + ((1-progress) * 100) + '% 0 0)';
-        photo.style.opacity = String(0.95 - progress * 0.15);
-        var edgeEl = card.querySelector('.scan-edge');
-        edgeEl.style.left = (progress * 100) + '%';
-        edgeEl.style.opacity = (progress > 0.01 && progress < 0.99) ? '1' : '0';
-        var glyphSpans = card.querySelectorAll('.glyphs span');
-        for (var gs = 0; gs < glyphSpans.length; gs++) {
-          var col = gs % 10;
-          var threshold = progress * 10;
-          var scanned = col < threshold;
-          glyphSpans[gs].style.color = scanned ? 'rgba(255,224,239,.72)' : 'rgba(242,155,189,.14)';
-          if (col >= threshold - 0.7 && col < threshold + 0.8 && progress > 0 && progress < 1) {
-            glyphSpans[gs].style.textShadow = '0 0 10px rgba(255,190,218,.98), 0 0 20px rgba(242,155,189,.6)';
-          } else {
-            glyphSpans[gs].style.textShadow = 'none';
-          }
-        }
-      }
-      requestAnimationFrame(frame);
-    }
-    requestAnimationFrame(frame);
-    return function(){};
-  }, [items]);
+  };
 
-  useEffect(function() {
-    var root = document.getElementById('petals');
-    if (!root) return;
-    root.innerHTML = '';
-    for (var i = 0; i < 18; i++) {
-      var petal = document.createElement('i');
-      petal.className = 'petal';
-      petal.style.left = Math.random() * 100 + '%';
-      petal.style.top = (-Math.random() * 600) + 'px';
-      petal.style.animationDuration = (6 + Math.random() * 12) + 's';
-      petal.style.animationDelay = (-Math.random() * 16) + 's';
-      petal.style.opacity = (0.2 + Math.random() * 0.6);
-      root.appendChild(petal);
+  useEffect(() => {
+    if (!trackRef.current || items.length === 0) return;
+    const track = trackRef.current;
+    if (reduced) {
+      updateDissolve(track);
+      return;
     }
-  }, []);
+    const speed = 55;
+    let lastTime = performance.now();
+    const animate = (now: number) => {
+      const delta = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
+      const currentSpeed = isHovering ? speed * 0.35 : speed;
+      positionRef.current -= currentSpeed * delta;
+      const loopWidth = track.scrollWidth / 3;
+      if (loopWidth > 0 && Math.abs(positionRef.current) >= loopWidth) {
+        positionRef.current += loopWidth;
+      }
+      track.style.transform = `translateX(${positionRef.current}px)`;
+      updateDissolve(track);
+      rafRef.current = requestAnimationFrame(animate);
+    };
+    rafRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [isHovering, reduced, items.length]);
+
+  useEffect(() => {
+    positionRef.current = 0;
+    const track = trackRef.current;
+    if (!track) return;
+    track.style.transform = "translateX(0px)";
+    updateDissolve(track);
+  }, [items.length]);
+
+  const handleMouseEnter = () => {
+    setIsHovering(true);
+    setStatus("paused");
+  };
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+    setStatus("idle");
+  };
+  const handlePause = () => {
+    setIsHovering(true);
+    setStatus("paused");
+  };
+  const handleResume = () => {
+    setIsHovering(false);
+    setStatus("idle");
+  };
+
+  if (items.length === 0) {
+    return (
+      <main className="sc-page">
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet" />
+        <header className="sc-nav">
+          <div className="sc-brand">
+            <div className="sc-brand-mark"></div>
+            <span>SAKURA / 活動記録</span>
+          </div>
+          <nav className="sc-nav-links">
+            <Link href="/">BERANDA</Link>
+            <Link href="/dokumentasi">DOKUMENTASI</Link>
+          </nav>
+        </header>
+        <section className="sc" id="scan">
+          <div className="wrap">
+            <p className="eyebrow light">スキャン</p>
+            <h2 className="sc-title">Pindaian <span>Kegiatan</span></h2>
+            <p className="sc-lead">Garis pemindai bergerak melintasi kartu kegiatan yang ada fotonya.</p>
+            <div className="sc-empty">Belum ada foto kegiatan yang diunggah.</div>
+          </div>
+        </section>
+        <style>{styles}</style>
+      </main>
+    );
+  }
 
   return (
-    <main style={{ margin: 0, color: "#fbeef4", fontFamily: "'Noto Sans JP',system-ui,sans-serif", backgroundImage: "linear-gradient(rgba(16,11,18,0.75), rgba(12,8,13,0.85)), url('/bg-japanese-romance.jpg'), radial-gradient(ellipse at 50% 20%,rgba(160,66,112,.24),transparent 45%)", backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "fixed", minHeight: "100vh", overflowX: "hidden", position: "relative" }}>
-      <AudioPlayer />
-      <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet" />
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20, padding: "26px clamp(20px,6vw,88px)", backdropFilter: "blur(12px)", background: "linear-gradient(180deg,rgba(36,22,34,0.6) 0%, transparent 100%)", borderBottom: "1px solid rgba(255,208,224,.16)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase" }}>
-          <div style={{ width: 38, height: 38, borderRadius: "50%", background: "radial-gradient(circle at 50% 28%,#fff 0 8%,#ffd0e0 9% 20%,transparent 22%),radial-gradient(circle at 28% 56%,#f29bbd 0 22%,transparent 24%),radial-gradient(circle at 72% 56%,#d45e98 0 22%,transparent 24%)", filter: "drop-shadow(0 0 12px #f29bbd88)" }}></div>
+    <main className="sc-page">
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet" />
+      <header className="sc-nav">
+        <div className="sc-brand">
+          <div className="sc-brand-mark"></div>
           <span>SAKURA / 活動記録</span>
         </div>
-        <nav style={{ display: "flex", gap: "1rem" }}>
-          <Link href="/" style={{ color: "#ffd0e0", textDecoration: "none", border: "1px solid rgba(242,155,189,.6)", borderRadius: 999, padding: "9px 16px", fontSize: 11, letterSpacing: ".18em", backdropFilter: "blur(8px)", background: "rgba(36,22,34,0.4)" }}>BERANDA</Link>
-          <Link href="/dokumentasi" style={{ color: "#ffd0e0", textDecoration: "none", border: "1px solid rgba(242,155,189,.6)", borderRadius: 999, padding: "9px 16px", fontSize: 11, letterSpacing: ".18em", backdropFilter: "blur(8px)", background: "rgba(36,22,34,0.4)" }}>DOKUMENTASI</Link>
+        <nav className="sc-nav-links">
+          <Link href="/">BERANDA</Link>
+          <Link href="/dokumentasi">DOKUMENTASI</Link>
         </nav>
       </header>
-      <section style={{ maxWidth: 1180, margin: "0 auto", padding: "52px 24px 24px", textAlign: "center" }}>
-        <div style={{ fontSize: 11, letterSpacing: ".28em", color: "#f29bbd", textTransform: "uppercase" }}>MONO NO AWARE · JEJAK YANG BERLALU</div>
-        <h1 style={{ font: "400 clamp(36px,5.2vw,64px)/1.08 'Shippori Mincho',serif", margin: "14px auto 16px", maxWidth: 880 }}>The Work, <span style={{ color: "#ffc5dc", fontStyle: "italic" }}>The Moments</span>, and <span style={{ color: "#ffc5dc", fontStyle: "italic" }}>in Between</span></h1>
-        <p style={{ color: "#d9b5c6", maxWidth: 720, margin: "0 auto", lineHeight: 1.9, fontSize: 15 }}>Seperti kabut di pagi hari, setiap momen berlalu begitu saja. Namun, jejaknya tetap tersisa—halus, sunyi, namun tak terhapuskan.</p>
-      </section>
-      <section ref={stageRef} style={{ position: "relative", height: "clamp(400px,58vw,560px)", margin: "28px 0 0", overflow: "hidden", isolation: "isolate" }}>
-        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 3, background: "linear-gradient(90deg,rgba(12,8,13,0.9) 0%,transparent 16%,transparent 84%,rgba(12,8,13,0.9) 100%)" }} />
-        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 3, background: "radial-gradient(ellipse at center,transparent 38%,rgba(8,5,9,0.25) 100%)" }} />
-        <div ref={trackRef} style={{ position: "absolute", left: 0, top: "50%", minHeight: "clamp(340px,48vw,440px)", transform: "translateY(-50%)", display: "flex", alignItems: "stretch", gap: 40, willChange: "transform" }} />
-        <div style={{ position: "absolute", zIndex: 5, top: "50%", left: "50%", height: "clamp(340px,48vw,440px)", width: 2, transform: "translate(-50%,-50%)", pointerEvents: "none", background: "linear-gradient(180deg,transparent,rgba(255,208,224,.8) 10%,#fff 50%,rgba(255,208,224,.8) 90%,transparent)", boxShadow: "0 0 12px 4px #ffd0e0,0 0 40px 16px #ff8dbd99,0 0 120px 28px #ff8dbd44" }}>
-          <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 220, transform: "translateX(-50%)", background: "linear-gradient(90deg,transparent,rgba(255,134,190,.08) 40%,rgba(255,174,211,.2) 50%,rgba(255,134,190,.08) 60%,transparent)", filter: "blur(10px)" }} />
-          <div style={{ position: "absolute", left: "50%", top: "50%", width: 14, height: 14, borderRadius: "50%", transform: "translate(-50%,-50%)", background: "#fff", boxShadow: "0 0 14px 6px #fff,0 0 36px 16px #ff9fc8" }} />
+
+      <section className="sc" id="scan" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+        <div className="wrap">
+          <p className="eyebrow light">スキャン</p>
+          <h2 className="sc-title">Pindaian <span>Kegiatan</span></h2>
+          <p className="sc-lead">
+            {items.length} foto dokumentasi melintas di garis pemindai. Foto memudar menjadi aksara saat melewati garis.
+          </p>
+
+          <div className="sc-stage">
+            <div className="sc-track" ref={trackRef} style={{ animation: reduced ? "none" : undefined }}>
+              {[0, 1, 2].map((copy) =>
+                items.map((photo) => (
+                  <div key={`${photo.key}-${copy}`} className="sc-card">
+                    <div className="sc-chip">
+                      <span>{GLYPHS}桜花月雪京炎鋼刃水火空心和道未来電脳夜</span>
+                    </div>
+                    <div className="sc-photo" role="img" aria-label={photo.title} style={{ backgroundImage: `url("${photo.image}")` }} />
+                    <div className="sc-glyphs" aria-hidden="true">
+                      {Array.from({ length: 130 }).map((_, i) => (
+                        <span key={i}>{GLYPHS[i % GLYPHS.length]}</span>
+                      ))}
+                    </div>
+                    <div className="sc-info">
+                      <span className="sc-tag">{photo.category}</span>
+                      <h2>{photo.title}</h2>
+                      <p>
+                        {formatTanggal(photo.date)}
+                        {photo.unit ? ` · ${photo.unit}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="sc-beam" ref={beamRef} />
+          </div>
+
+          <div className="sc-controls">
+            <button className="sc-btn" onClick={handlePause} disabled={status === "paused" || reduced}>
+              Jeda
+            </button>
+            <button className="sc-btn" onClick={handleResume} disabled={status === "idle" || reduced}>
+              Lanjut
+            </button>
+            <span className="sc-status">{status === "paused" ? "Dijeda" : status === "idle" ? "Berjalan" : "Memindai"}</span>
+          </div>
         </div>
-        <div id="petals" className="petals" style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 6, overflow: "hidden" }} />
       </section>
-      <div className="controls" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap", padding: "18px 20px 36px", position: "relative", zIndex: 9 }}>
-        <button className="ctrl" id="toggle" style={{ border: "1px solid rgba(242,155,189,.7)", background: "linear-gradient(90deg,rgba(66,34,55,0.8),rgba(36,22,34,0.8))", color: "#fbeef4", padding: "10px 18px", borderRadius: 999, fontSize: 12, letterSpacing: ".12em", cursor: "pointer", backdropFilter: "blur(10px)" }}>Jeda animasi</button>
-        <button className="ctrl" id="slower" style={{ border: "1px solid rgba(242,155,189,.5)", background: "rgba(36,22,34,0.6)", color: "#fbeef4", padding: "10px 18px", borderRadius: 999, fontSize: 12, letterSpacing: ".12em", cursor: "pointer", backdropFilter: "blur(10px)" }}>Perlambat</button>
-        <button className="ctrl" id="faster" style={{ border: "1px solid rgba(242,155,189,.5)", background: "rgba(36,22,34,0.6)", color: "#fbeef4", padding: "10px 18px", borderRadius: 999, fontSize: 12, letterSpacing: ".12em", cursor: "pointer", backdropFilter: "blur(10px)" }}>Percepat</button>
-        <span className="speed" id="speed" style={{ color: "#ffd0e0", minWidth: 90, fontSize: 11, textAlign: "center", letterSpacing: ".16em" }}>55 px/detik</span>
-      </div>
-      <style>{`
-        .card{position:relative;flex:0 0 clamp(260px,28vw,340px);height:auto;min-height:100%;overflow:hidden;border:1px solid rgba(255,208,224,.28);border-radius:26px;background:radial-gradient(circle at top,rgba(242,155,189,.18),transparent 55%),#140f16;box-shadow:0 40px 90px -40px rgba(242,155,189,.4),0 0 0 1px rgba(255,255,255,.02) inset;isolation:isolate}
-        .chip{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 14px,rgba(242,155,189,.06) 15px 16px),repeating-linear-gradient(90deg,transparent 0 20px,rgba(242,155,189,.08) 21px 22px),radial-gradient(circle at 50% 0,rgba(255,208,224,.12),transparent 60%),linear-gradient(160deg,#2a1926,#120b12 80%);z-index:0}
-        .photo-wrap{position:absolute;inset:0;overflow:hidden;z-index:1;background:radial-gradient(circle at top,rgba(242,155,189,.18),transparent 55%),#140f16}
-        .photo-wrap:before{content:"";position:absolute;inset:-8%;z-index:0;background-image:var(--photo-fill);background-size:cover;background-position:center;filter:blur(26px) saturate(1.05) brightness(.5);opacity:.85;pointer-events:none}
-        .photo-wrap:after{content:"";position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse at center,rgba(12,8,13,.15),rgba(12,8,13,.72) 100%);pointer-events:none}
-        .photo{position:absolute;inset:0;width:100%;height:100%;background-size:contain;background-position:center center;background-repeat:no-repeat;filter:saturate(.92) contrast(1.02);clip-path:inset(0 0 0 0);will-change:clip-path,opacity}
-        .photo:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(12,8,13,.02) 20%,rgba(12,8,13,.55) 100%)}
-        .glyphs{position:absolute;inset:0;z-index:2;display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(13,1fr);padding:14px;gap:1px;pointer-events:none;mask-image:linear-gradient(90deg,#000 0%,#000 70%,transparent 100%)}
-        .glyphs span{font-size:clamp(11px,1.3vw,16px);color:#f29bbd20;text-align:center;align-self:center;transition:color .22s ease,text-shadow .22s ease;font-family:'Noto Sans JP',sans-serif}
-        .scan-edge{position:absolute;top:0;bottom:0;width:44px;z-index:3;pointer-events:none;transform:translateX(-50%);background:linear-gradient(90deg,transparent,rgba(255,208,224,.55),rgba(255,134,190,.24),transparent);filter:blur(5px);will-change:left,opacity}
-        .info{position:absolute;z-index:4;left:26px;right:26px;bottom:26px;text-shadow:0 4px 16px #000;pointer-events:none;isolation:isolate}
-        .tag{font-size:10px;letter-spacing:.24em;color:#ffc3da;text-transform:uppercase}
-        .info h2{font:400 24px/1.26 'Shippori Mincho',serif;margin:10px 0 6px;text-shadow:0 2px 10px #000,0 0 26px rgba(0,0,0,.75)}
-        .info p{font-size:11px;color:#e7c9d8;margin:0;letter-spacing:.08em}
-        .info:before{content:"";position:absolute;left:-26px;right:-26px;bottom:-26px;top:-8px;z-index:-1;border-radius:0;background:linear-gradient(180deg,transparent,rgba(12,8,13,.72) 34%,rgba(12,8,13,.9));pointer-events:none}
-        .petal{position:absolute;width:8px;height:12px;border-radius:80% 0 80% 0;background:radial-gradient(circle,#ffd0e0 0%,#f29bbd77 70%);filter:blur(.4px);animation:fall linear infinite}
-        @keyframes fall{from{transform:translate3d(0,-40px,0) rotate(0)}to{transform:translate3d(80px,620px,0) rotate(360deg)}}
-        @media(max-width:600px){.card{flex-basis:240px;border-radius:22px}.info{left:18px;bottom:18px}.info h2{font-size:20px}.glyphs{padding:10px}}
-      `}</style>
+      <style>{styles}</style>
     </main>
   );
 }
+
+const styles = `
+  .sc-page { margin: 0; color: #fbeef4; font-family: 'Noto Sans JP', system-ui, sans-serif; background: radial-gradient(1200px 800px at 50% 0%, rgba(242, 155, 189, 0.18), transparent 60%), radial-gradient(900px 600px at 20% 10%, rgba(160, 66, 112, 0.16), transparent 55%), linear-gradient(180deg, #140f16 0%, #0c080d 100%); min-height: 100dvh; overflow-x: hidden; position: relative; }
+  .sc-nav { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 26px clamp(20px,6vw,88px); backdrop-filter: blur(12px); background: linear-gradient(180deg, rgba(36,22,34,0.7) 0%, transparent 100%); border-bottom: 1px solid rgba(255,208,224,.18); }
+  .sc-brand { display: flex; align-items: center; gap: 14px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; font-size: 12px; }
+  .sc-brand-mark { width: 38px; height: 38px; border-radius: 50%; background: radial-gradient(circle at 50% 28%, #fff 0 8%, #ffd0e0 9% 20%, transparent 22%), radial-gradient(circle at 28% 56%, #f29bbd 0 22%, transparent 24%), radial-gradient(circle at 72% 56%, #d45e98 0 22%, transparent 24%); filter: drop-shadow(0 0 12px #f29bbd88); }
+  .sc-nav-links { display: flex; gap: 1rem; }
+  .sc-nav-links a { color: #ffd0e0; text-decoration: none; border: 1px solid rgba(242,155,189,.6); border-radius: 999px; padding: 9px 16px; font-size: 11px; letter-spacing: .18em; backdrop-filter: blur(8px); background: rgba(36,22,34,0.4); }
+  .sc { position: relative; padding: clamp(3rem, 8vw, 6rem) 0 clamp(4rem, 10vw, 7rem); }
+  .sc .wrap { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; display: flex; flex-direction: column; gap: 1rem; }
+  .eyebrow.light { font-size: 11px; letter-spacing: .32em; text-transform: uppercase; color: #f29bbd; }
+  .sc-title { font: 400 clamp(2.5rem, 6vw, 4.8rem)/1.08 'Shippori Mincho', serif; margin: 0; }
+  .sc-title span { color: #ffc5dc; font-style: italic; }
+  .sc-lead { max-width: 720px; color: #d9b5c6; line-height: 1.9; margin: 0; }
+  .sc-empty { margin-top: 2rem; padding: 2rem; border-radius: 18px; border: 1px solid rgba(255,208,224,.28); background: radial-gradient(circle at top, rgba(242,155,189,.16), transparent 60%), rgba(20,15,22,.8); text-align: center; color: #d9b5c6; }
+  .sc-stage { position: relative; margin-top: clamp(2rem, 6vw, 4rem); height: clamp(380px, 58vw, 520px); overflow: hidden; border-radius: clamp(24px, 6vw, 36px); border: 1px solid rgba(255,208,224,.26); background: radial-gradient(ellipse at center, rgba(242,155,189,.14), transparent 60%), radial-gradient(circle at 50% 0%, rgba(255,208,224,.12), transparent 55%), #120b12; box-shadow: 0 80px 140px -90px rgba(242,155,189,.45); }
+  .sc-stage::before, .sc-stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+  .sc-stage::before { background: linear-gradient(90deg, rgba(12,8,13,.95) 0%, transparent 16%, transparent 84%, rgba(12,8,13,.95) 100%); }
+  .sc-stage::after { background: radial-gradient(ellipse at center, transparent 38%, rgba(8,5,9,.28) 100%); }
+  .sc-track { position: absolute; left: 0; top: 50%; display: flex; gap: 40px; height: clamp(320px, 46vw, 420px); transform: translateY(-50%); will-change: transform; z-index: 1; }
+  .sc-card { position: relative; flex: 0 0 clamp(260px, 28vw, 340px); height: 100%; border-radius: 26px; overflow: hidden; border: 1px solid rgba(255,208,224,.32); background: radial-gradient(circle at top, rgba(242,155,189,.18), transparent 55%), #140f16; box-shadow: 0 40px 90px -40px rgba(242,155,189,.4); isolation: isolate; --scan: 0; }
+  .sc-card.is-dissolving .sc-photo { filter: saturate(0.4) contrast(0.9); }
+  .sc-card.is-gone .sc-info, .sc-card.is-gone .sc-tag { opacity: 0; }
+  .sc-chip { position: absolute; inset: 0; overflow: hidden; z-index: 0; background: repeating-linear-gradient(0deg, transparent 0 14px, rgba(242,155,189,.06) 15px 16px), repeating-linear-gradient(90deg, transparent 0 20px, rgba(242,155,189,.08) 21px 22px), radial-gradient(circle at 50% 0, rgba(255,208,224,.12), transparent 60%), linear-gradient(160deg, #2a1926, #120b12 80%); }
+  .sc-chip span { position: absolute; inset: -40% -20%; font-size: 10px; letter-spacing: 1.6em; writing-mode: vertical-rl; text-orientation: mixed; color: rgba(255,208,224,.12); transform: rotate(12deg); white-space: nowrap; }
+  .sc-photo { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: 1; clip-path: inset(calc(var(--scan) * 100%) 0 0 0); transition: clip-path 180ms linear, filter 320ms ease; will-change: clip-path; }
+  .sc-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(12,8,13,.02) 20%, rgba(12,8,13,.9) 100%); }
+  .sc-glyphs { position: absolute; inset: 0; z-index: 2; display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(13, 1fr); padding: 14px; gap: 1px; pointer-events: none; mask-image: linear-gradient(90deg, #000 0%, #000 70%, transparent 100%); }
+  .sc-glyphs span { font-size: clamp(11px, 1.3vw, 16px); color: rgba(242,155,189,.16); text-align: center; align-self: center; font-family: 'Noto Sans JP', sans-serif; }
+  .sc-card.is-dissolving .sc-glyphs span { color: rgba(255,224,239,.72); text-shadow: 0 0 12px rgba(255,190,218,.9); }
+  .sc-info { position: absolute; z-index: 3; left: 26px; right: 26px; bottom: 26px; display: flex; flex-direction: column; gap: 6px; text-shadow: 0 4px 16px #000; transition: opacity 280ms ease; }
+  .sc-tag { font-size: 10px; letter-spacing: .28em; text-transform: uppercase; color: #ffc3da; transition: opacity 280ms ease; }
+  .sc-info h2 { margin: 0; font: 400 clamp(1.2rem, 2.4vw, 1.6rem)/1.26 'Shippori Mincho', serif; }
+  .sc-info p { margin: 0; font-size: 11px; letter-spacing: .12em; color: #e7c9d8; }
+  .sc-beam { position: absolute; z-index: 5; top: 50%; left: 50%; height: clamp(320px, 46vw, 420px); width: 2px; transform: translate(-50%, -50%); pointer-events: none; background: linear-gradient(180deg, transparent, rgba(255,208,224,.9) 10%, #fff 50%, rgba(255,208,224,.9) 90%, transparent); box-shadow: 0 0 14px 6px #ffd0e0, 0 0 44px 18px #ff8dbd99, 0 0 120px 30px #ff8dbd44; }
+  .sc-beam::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 220px; transform: translateX(-50%); background: linear-gradient(90deg, transparent, rgba(255,134,190,.08) 40%, rgba(255,174,211,.22) 50%, rgba(255,134,190,.08) 60%, transparent); filter: blur(12px); }
+  .sc-beam::after { content: ""; position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; border-radius: 50%; transform: translate(-50%, -50%); background: #fff; box-shadow: 0 0 16px 8px #fff, 0 0 40px 18px #ff9fc8; }
+  .sc-controls { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: clamp(1.2rem, 4vw, 2rem); }
+  .sc-btn { border: 1px solid rgba(242,155,189,.7); background: linear-gradient(90deg, rgba(66,34,55,0.9), rgba(36,22,34,0.9)); color: #fbeef4; padding: 10px 18px; border-radius: 999px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; backdrop-filter: blur(10px); }
+  .sc-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .sc-status { color: #ffd0e0; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; }
+  @media (max-width: 680px) { .sc-card { flex-basis: 240px; border-radius: 22px; } .sc-info { left: 18px; right: 18px; bottom: 18px; } .sc-glyphs { padding: 10px; } }
+`;
