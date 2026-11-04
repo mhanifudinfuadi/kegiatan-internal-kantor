@@ -41,13 +41,27 @@ export default async function DokumentasiUnitPage({ params }: { params: Promise<
   const { unit } = await params;
   const { kegiatan } = await fetchKegiatan();
   const target = normalisasiUnitKerja(decodeURIComponent(unit).replace(/-/g, " "));
-  const items = kegiatan
+  const semuaItem = kegiatan
     .filter((item) => normalisasiUnitKerja(item.unitKerja).slug === target.slug)
     .sort((a, b) => {
       const ta = a.tanggal || a.createdAt;
       const tb = b.tanggal || b.createdAt;
       return tb.localeCompare(ta);
     });
+
+  // Satu ragam cerita tampil sekali saja dengan versi terbaru (foto yang paling
+  // akhir diperbarui). Versi lama dengan judul yang sama disembunyikan supaya
+  // card tidak menampilkan foto lama hanya karena update terakhir.
+  const terbaruPerJudul = (daftar: Kegiatan[]) => {
+    const terlihat = new Set<string>();
+    return daftar.filter((item) => {
+      const kunci = item.judul.trim().toLowerCase();
+      if (terlihat.has(kunci)) return false;
+      terlihat.add(kunci);
+      return true;
+    });
+  };
+  const items = terbaruPerJudul(semuaItem);
 
   return (
     <main className={styles.page}>
@@ -85,7 +99,7 @@ export default async function DokumentasiUnitPage({ params }: { params: Promise<
           <p className={styles.kicker}>RAGAM CERITA · 物語 {target.nama.toUpperCase()}</p>
           <h1 id="unit-title">Kisah {target.nama}</h1>
           <div className={styles.metaRow}>
-            <span>{items.length} Agenda</span>
+            <span>{items.length} Cerita</span>
             <span>
               {items.reduce((total, item) => {
                 const count = (item.fotoUrls && item.fotoUrls.length > 0)

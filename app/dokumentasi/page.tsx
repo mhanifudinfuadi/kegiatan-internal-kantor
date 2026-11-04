@@ -2,28 +2,26 @@ import Link from "next/link";
 import { fetchKegiatan } from "@/lib/supabase";
 import { normalisasiUnitKerja } from "@/lib/unit-kerja";
 import type { Kegiatan } from "@/lib/types";
+import StoryCard from "@/components/dokumentasi/StoryCard";
 import styles from "@/components/dokumentasi/DokumentasiIndex.module.css";
 
 type RingkasanUnit = {
   slug: string;
   nama: string;
   kegiatan: Kegiatan[];
-  cover: Kegiatan | null;
+  foto: Array<{ src: string; judul: string; tanggal: string | null }>;
 };
 
-function formatTanggal(value: string | null) {
-  if (!value) return "Tanggal belum dicatat";
-  const date = new Date(`${value.slice(0, 10)}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return "Tanggal belum dicatat";
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(date);
+/** Ambil seluruh foto sebuah kegiatan (bukan hanya foto utama/terakhir). */
+function semuaFoto(item: Kegiatan): string[] {
+  const daftar = (item.fotoUrls && item.fotoUrls.length > 0 ? item.fotoUrls : [item.fotoUrl])
+    .map((url) => (url ?? "").trim())
+    .filter(Boolean);
+  return Array.from(new Set(daftar));
 }
 
 export default async function DokumentasiPage() {
-  const { kegiatan, sumber, catatan } = await fetchKegiatan();
+  const { catatan, kegiatan } = await fetchKegiatan(500);
   const units = new Map<string, RingkasanUnit>();
 
   for (const item of kegiatan) {
@@ -32,10 +30,12 @@ export default async function DokumentasiPage() {
       slug: unit.slug,
       nama: unit.nama,
       kegiatan: [],
-      cover: null,
+      foto: [],
     };
     current.kegiatan.push(item);
-    if (!current.cover && item.fotoUrl) current.cover = item;
+    for (const src of semuaFoto(item)) {
+      current.foto.push({ src, judul: item.judul, tanggal: item.tanggal });
+    }
     units.set(unit.slug, current);
   }
 
@@ -46,12 +46,7 @@ export default async function DokumentasiPage() {
     }))
     .sort((a, b) => a.nama.localeCompare(b.nama));
 
-  const jumlahFoto = kegiatan.reduce((total, item) => {
-    const count = (item.fotoUrls && item.fotoUrls.length > 0)
-      ? item.fotoUrls.length
-      : (item.fotoUrl ? 1 : 0);
-    return total + count;
-  }, 0);
+  const jumlahFoto = kegiatan.reduce((total, item) => total + semuaFoto(item).length, 0);
 
   return (
     <main className={styles.page}>
@@ -132,39 +127,16 @@ export default async function DokumentasiPage() {
       {daftarUnit.length ? (
         <section className={styles.unitGrid} aria-label="Daftar ragam cerita kegiatan">
           {daftarUnit.map((unit, index) => (
-            <Link key={unit.slug} href={`/dokumentasi/${unit.slug}`} className={styles.unitCard}>
-              <div className={styles.cover}>
-                {unit.cover?.fotoUrl ? (
-                  <img
-                    src={unit.cover.fotoUrl}
-                    alt={`Dokumentasi ${unit.cover.judul} — ${formatTanggal(unit.cover.tanggal)}`}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  <div className={styles.coverEmpty}>
-                    <span aria-hidden="true">✿</span>
-                    <span>Belum ada foto</span>
-                  </div>
-                )}
-                <span className={styles.unitNo}>{String(index + 1).padStart(2, "0")}</span>
-                <span className={styles.coverTag}>{unit.kegiatan.length} KEGIATAN</span>
-                <span className={styles.cardArrow} aria-hidden="true">
-                  ↗
-                </span>
-              </div>
-              <div className={styles.unitInfo}>
-                <span className={styles.unitKicker}>
-                  RAGAM CERITA <span>· 物語 {String(index + 1).padStart(2, "0")}</span>
-                </span>
-                <h3>{unit.nama}</h3>
-                <p className={styles.latestDate}>{formatTanggal(unit.terbaru?.tanggal ?? null)}</p>
-                <div className={styles.latestLine}>
-                  <span>Kegiatan terbaru</span>
-                  <strong>{unit.terbaru?.judul ?? "Belum ada kegiatan"}</strong>
-                </div>
-              </div>
-            </Link>
+            <StoryCard
+              key={unit.slug}
+              href={`/dokumentasi/${unit.slug}`}
+              nama={unit.nama}
+              index={index}
+              photos={unit.foto}
+              kegiatanCount={unit.kegiatan.length}
+              latestTanggal={unit.terbaru?.tanggal ?? null}
+              latestJudul={unit.terbaru?.judul ?? null}
+            />
           ))}
         </section>
       ) : (

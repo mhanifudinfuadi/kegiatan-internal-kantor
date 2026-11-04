@@ -71,7 +71,7 @@ export default function TalksShowcasePage() {
       for (var g = 0; g < 130; g++) {
         glyphs += '<span></span>';
       }
-      card.innerHTML = '<div class="chip"></div><div class="photo-wrap"><div class="photo" style="background-image:url(' + it.src.replace(/'/g, "\\'") + ')"></div></div><div class="glyphs">' + glyphs + '</div><div class="info"><div class="tag">' + (i+1).toString().padStart(2,'0') + ' / ' + it.tag + '</div><h2>' + it.title.replace(/</g,'&lt;') + '</h2><p>' + it.unit + ' • ' + it.date + '</p></div>';
+      card.innerHTML = '<div class="chip"></div><div class="photo-wrap" style="--photo-fill:url(\'' + it.src.replace(/'/g, "\\'") + '\')"><div class="photo" style="background-image:url(' + it.src.replace(/'/g, "\\'") + ')"></div></div><div class="glyphs">' + glyphs + '</div><div class="info"><div class="tag">' + (i+1).toString().padStart(2,'0') + ' / ' + it.tag + '</div><h2>' + it.title.replace(/</g,'&lt;') + '</h2><p>' + it.unit + ' • ' + it.date + '</p></div>';
       track.appendChild(card);
       original.push(card);
     }
@@ -182,7 +182,7 @@ export default function TalksShowcasePage() {
       <section ref={stageRef} style={{ position: "relative", height: "clamp(400px,58vw,560px)", margin: "28px 0 0", overflow: "hidden", isolation: "isolate" }}>
         <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 3, background: "linear-gradient(90deg,rgba(12,8,13,0.9) 0%,transparent 16%,transparent 84%,rgba(12,8,13,0.9) 100%)" }} />
         <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 3, background: "radial-gradient(ellipse at center,transparent 38%,rgba(8,5,9,0.25) 100%)" }} />
-        <div ref={trackRef} style={{ position: "absolute", left: 0, top: "50%", height: "clamp(340px,48vw,440px)", transform: "translateY(-50%)", display: "flex", gap: 40, willChange: "transform" }} />
+        <div ref={trackRef} style={{ position: "absolute", left: 0, top: "50%", minHeight: "clamp(340px,48vw,440px)", transform: "translateY(-50%)", display: "flex", alignItems: "stretch", gap: 40, willChange: "transform" }} />
         <div style={{ position: "absolute", zIndex: 5, top: "50%", left: "50%", height: "clamp(340px,48vw,440px)", width: 2, transform: "translate(-50%,-50%)", pointerEvents: "none", background: "linear-gradient(180deg,transparent,rgba(255,208,224,.8) 10%,#fff 50%,rgba(255,208,224,.8) 90%,transparent)", boxShadow: "0 0 12px 4px #ffd0e0,0 0 40px 16px #ff8dbd99,0 0 120px 28px #ff8dbd44" }}>
           <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 220, transform: "translateX(-50%)", background: "linear-gradient(90deg,transparent,rgba(255,134,190,.08) 40%,rgba(255,174,211,.2) 50%,rgba(255,134,190,.08) 60%,transparent)", filter: "blur(10px)" }} />
           <div style={{ position: "absolute", left: "50%", top: "50%", width: 14, height: 14, borderRadius: "50%", transform: "translate(-50%,-50%)", background: "#fff", boxShadow: "0 0 14px 6px #fff,0 0 36px 16px #ff9fc8" }} />
@@ -196,18 +196,21 @@ export default function TalksShowcasePage() {
         <span className="speed" id="speed" style={{ color: "#ffd0e0", minWidth: 90, fontSize: 11, textAlign: "center", letterSpacing: ".16em" }}>55 px/detik</span>
       </div>
       <style>{`
-        .card{position:relative;flex:0 0 clamp(260px,28vw,340px);height:100%;overflow:hidden;border:1px solid rgba(255,208,224,.28);border-radius:26px;background:radial-gradient(circle at top,rgba(242,155,189,.18),transparent 55%),#140f16;box-shadow:0 40px 90px -40px rgba(242,155,189,.4),0 0 0 1px rgba(255,255,255,.02) inset;isolation:isolate}
+        .card{position:relative;flex:0 0 clamp(260px,28vw,340px);height:auto;min-height:100%;overflow:hidden;border:1px solid rgba(255,208,224,.28);border-radius:26px;background:radial-gradient(circle at top,rgba(242,155,189,.18),transparent 55%),#140f16;box-shadow:0 40px 90px -40px rgba(242,155,189,.4),0 0 0 1px rgba(255,255,255,.02) inset;isolation:isolate}
         .chip{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 14px,rgba(242,155,189,.06) 15px 16px),repeating-linear-gradient(90deg,transparent 0 20px,rgba(242,155,189,.08) 21px 22px),radial-gradient(circle at 50% 0,rgba(255,208,224,.12),transparent 60%),linear-gradient(160deg,#2a1926,#120b12 80%);z-index:0}
-        .photo-wrap{position:absolute;inset:0;overflow:hidden;z-index:1}
-        .photo{position:absolute;inset:-2%;width:104%;height:104%;background-size:cover;background-position:center;filter:saturate(.92) contrast(1.02);clip-path:inset(0 0 0 0);will-change:clip-path,opacity}
-        .photo:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,8,13,.02) 20%,rgba(12,8,13,.9) 100%)}
+        .photo-wrap{position:absolute;inset:0;overflow:hidden;z-index:1;background:radial-gradient(circle at top,rgba(242,155,189,.18),transparent 55%),#140f16}
+        .photo-wrap:before{content:"";position:absolute;inset:-8%;z-index:0;background-image:var(--photo-fill);background-size:cover;background-position:center;filter:blur(26px) saturate(1.05) brightness(.5);opacity:.85;pointer-events:none}
+        .photo-wrap:after{content:"";position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse at center,rgba(12,8,13,.15),rgba(12,8,13,.72) 100%);pointer-events:none}
+        .photo{position:absolute;inset:0;width:100%;height:100%;background-size:contain;background-position:center center;background-repeat:no-repeat;filter:saturate(.92) contrast(1.02);clip-path:inset(0 0 0 0);will-change:clip-path,opacity}
+        .photo:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(12,8,13,.02) 20%,rgba(12,8,13,.55) 100%)}
         .glyphs{position:absolute;inset:0;z-index:2;display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(13,1fr);padding:14px;gap:1px;pointer-events:none;mask-image:linear-gradient(90deg,#000 0%,#000 70%,transparent 100%)}
         .glyphs span{font-size:clamp(11px,1.3vw,16px);color:#f29bbd20;text-align:center;align-self:center;transition:color .22s ease,text-shadow .22s ease;font-family:'Noto Sans JP',sans-serif}
         .scan-edge{position:absolute;top:0;bottom:0;width:44px;z-index:3;pointer-events:none;transform:translateX(-50%);background:linear-gradient(90deg,transparent,rgba(255,208,224,.55),rgba(255,134,190,.24),transparent);filter:blur(5px);will-change:left,opacity}
-        .info{position:absolute;z-index:4;left:26px;right:26px;bottom:26px;text-shadow:0 4px 16px #000}
+        .info{position:absolute;z-index:4;left:26px;right:26px;bottom:26px;text-shadow:0 4px 16px #000;pointer-events:none;isolation:isolate}
         .tag{font-size:10px;letter-spacing:.24em;color:#ffc3da;text-transform:uppercase}
-        .info h2{font:400 24px/1.26 'Shippori Mincho',serif;margin:10px 0 6px}
+        .info h2{font:400 24px/1.26 'Shippori Mincho',serif;margin:10px 0 6px;text-shadow:0 2px 10px #000,0 0 26px rgba(0,0,0,.75)}
         .info p{font-size:11px;color:#e7c9d8;margin:0;letter-spacing:.08em}
+        .info:before{content:"";position:absolute;left:-26px;right:-26px;bottom:-26px;top:-8px;z-index:-1;border-radius:0;background:linear-gradient(180deg,transparent,rgba(12,8,13,.72) 34%,rgba(12,8,13,.9));pointer-events:none}
         .petal{position:absolute;width:8px;height:12px;border-radius:80% 0 80% 0;background:radial-gradient(circle,#ffd0e0 0%,#f29bbd77 70%);filter:blur(.4px);animation:fall linear infinite}
         @keyframes fall{from{transform:translate3d(0,-40px,0) rotate(0)}to{transform:translate3d(80px,620px,0) rotate(360deg)}}
         @media(max-width:600px){.card{flex-basis:240px;border-radius:22px}.info{left:18px;bottom:18px}.info h2{font-size:20px}.glyphs{padding:10px}}
