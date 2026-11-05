@@ -289,7 +289,7 @@ const styles = `
   .sc-stage::before, .sc-stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4; }
   .sc-stage::before { background: linear-gradient(90deg, rgba(12,8,13,.95) 0%, transparent 16%, transparent 84%, rgba(12,8,13,.95) 100%); }
   .sc-stage::after { background: radial-gradient(ellipse at center, transparent 38%, rgba(8,5,9,.28) 100%); }
-  .sc-track { position: absolute; left: 0; top: calc(50% - clamp(160px, 23vw, 210px)); display: flex; align-items: center; gap: 40px; height: clamp(320px, 46vw, 420px); will-change: transform; z-index: 1; }
+  .sc-track { position: absolute; left: 0; top: calc(50% - clamp(160px, 23vw, 210px) - 6px); display: flex; align-items: center; gap: 40px; height: clamp(320px, 46vw, 420px); will-change: transform; z-index: 1; }
   .sc-card { position: relative; flex: 0 0 clamp(260px, 28vw, 340px); height: clamp(320px, 46vw, 420px); align-self: center; border-radius: 26px; overflow: hidden; border: 1px solid rgba(255,208,224,.32); background: radial-gradient(circle at top, rgba(242,155,189,.18), transparent 55%), #140f16; box-shadow: 0 40px 90px -40px rgba(242,155,189,.4); isolation: isolate; --scan: 0; }
   .sc-card.is-dissolving .sc-photo { filter: saturate(0.4) contrast(0.9); }
   .sc-card.is-gone .sc-info, .sc-card.is-gone .sc-tag { opacity: 0; }

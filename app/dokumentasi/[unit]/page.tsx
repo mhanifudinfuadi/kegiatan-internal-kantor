@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { unstable_noStore as noStore } from "next/cache";
 import { fetchKegiatan } from "@/lib/supabase";
 import { normalisasiUnitKerja } from "@/lib/unit-kerja";
@@ -42,6 +43,15 @@ function safePhotoUrl(url: string | null) {
   return trimmed;
 }
 
+export async function generateMetadata({ params }: { params: Promise<{ unit: string }> }) {
+  const { unit } = await params;
+  const target = normalisasiUnitKerja(decodeURIComponent(unit).replace(/-/g, " "));
+  return {
+    title: `Kisah ${target.nama}`,
+    description: `Ragam cerita dan dokumentasi kegiatan ${target.nama} di Kantor Madu Jakbar.`,
+  };
+}
+
 export default async function DokumentasiUnitPage({ params }: { params: Promise<{ unit: string }> }) {
   noStore();
   const { unit } = await params;
@@ -54,6 +64,9 @@ export default async function DokumentasiUnitPage({ params }: { params: Promise<
       const tb = b.tanggal || b.createdAt;
       return tb.localeCompare(ta);
     });
+
+  // Slug unit yang tidak punya kegiatan -> halaman 404 (bukan halaman kosong).
+  if (items.length === 0) notFound();
 
   return (
     <main className={styles.page}>
@@ -123,6 +136,7 @@ export default async function DokumentasiUnitPage({ params }: { params: Promise<
                 <header className={styles.headerBlock}>
                   <span className={styles.kicker}>{formatTanggalLengkap(item.tanggal || item.createdAt)}</span>
                   <h2>{item.judul}</h2>
+                  {item.subJudul && <p className={styles.kicker}>{item.subJudul}</p>}
                 </header>
                 {item.keterangan && <p className={styles.keterangan}>{item.keterangan}</p>}
                 {photos.length > 0 && (

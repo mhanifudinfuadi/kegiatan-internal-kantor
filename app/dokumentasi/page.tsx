@@ -69,9 +69,11 @@ export default async function DokumentasiPage() {
           <Link href="/">Beranda</Link>
           <span aria-hidden="true">/</span>
           <span aria-current="page">Dokumentasi</span>
+          <span aria-hidden="true">/</span>
+          <Link href="/dokumentasi-showcase">Showcase</Link>
         </nav>
-        <Link href="/" className={styles.homeLink}>
-          Kembali <span aria-hidden="true">↗</span>
+        <Link href="/galeri" className={styles.homeLink}>
+          Galeri <span aria-hidden="true">↗</span>
         </Link>
       </header>
 
@@ -153,8 +155,8 @@ export default async function DokumentasiPage() {
           <p className={styles.eyebrow}>ARSIP MASIH KOSONG</p>
           <h2 id="empty-title">Cerita pertama akan dimulai di sini.</h2>
           <p>Dokumentasi kegiatan yang diunggah melalui portal Madu Jakbar Sport akan muncul di halaman ini.</p>
-          <Link href="/" className={styles.emptyLink}>
-            Kembali ke beranda <span aria-hidden="true">↗</span>
+          <Link href="/dashboard" className={styles.emptyLink}>
+            Unggah dokumentasi <span aria-hidden="true">↗</span>
           </Link>
         </section>
       )}
@@ -163,6 +165,9 @@ export default async function DokumentasiPage() {
         <span>花　ETHEREAL</span>
         <span>ARSIP KEGIATAN INTERNAL · {new Date().getFullYear()}</span>
       </footer>
+      <p className={styles.dataNotice} style={{ paddingTop: 0 }}>
+        Kelola unggahan foto kegiatan lewat <Link href="/dashboard">dashboard</Link>.
+      </p>
     </main>
   );
 }

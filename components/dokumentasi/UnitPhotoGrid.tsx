@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import PreviewLightbox, { PreviewPhotoItem } from "./PreviewLightbox";
 import styles from "./DokumentasiUnit.module.css";
 
@@ -65,12 +66,15 @@ export default function UnitPhotoGrid({ photos, itemJudul }: Props) {
               aria-label={`Buka preview foto ${idx + 1} dari ${photos.length}`}
               title="Klik untuk membuka preview & unduh foto"
             >
-              <img
-                src={photo.src}
-                alt={`${itemJudul} - foto ${idx + 1} dari ${photos.length}`}
-                loading="lazy"
-                decoding="async"
-              />
+              <div className={styles.photoFrame}>
+                <Image
+                  src={photo.src}
+                  alt={`${itemJudul} - foto ${idx + 1} dari ${photos.length}`}
+                  fill
+                  sizes="(max-width: 760px) 100vw, 600px"
+                  className={styles.photoImg}
+                />
+              </div>
               <div className={styles.photoOverlayBadge}>
                 <span className={styles.photoZoomIcon} aria-hidden="true">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">

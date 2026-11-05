@@ -39,8 +39,8 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(1200px 600px at 50% 0%, rgba(255, 248, 251, 0.4), transparent 70%);
-  mix-blend-mode: screen;
+  background: rgba(251, 243, 247, 0.88);
+  mix-blend-mode: normal;
   z-index: 0;
 }
 
@@ -310,11 +310,20 @@
   color: #ffd0e0;
 }
 
+.photoFrame {
+  position: absolute;
+  inset: 0;
+}
 .photoCard img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+}
+.photoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .photoCardLarge {

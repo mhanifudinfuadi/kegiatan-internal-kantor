@@ -1,6 +1,7 @@
 export type Kegiatan = {
   id: string
   judul: string
+  subJudul?: string | null
   keterangan: string | null
   tanggal: string | null
   unitKerja: string

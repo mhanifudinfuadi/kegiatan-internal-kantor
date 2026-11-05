@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import styles from "./PreviewLightbox.module.css";
 
 export type PreviewPhotoItem = {
@@ -163,11 +164,13 @@ export default function PreviewLightbox({ items, currentIndex, onClose, onNaviga
 
         <figure className={styles.figure}>
           <div className={styles.imageWrap}>
-            <img
+            <Image
               src={active.src}
               alt={active.title}
+              fill
+              sizes="90vw"
               className={styles.image}
-              decoding="async"
+              priority
             />
           </div>
 
@@ -206,7 +209,7 @@ export default function PreviewLightbox({ items, currentIndex, onClose, onNaviga
               aria-label={`Pilih foto ${idx + 1}`}
               aria-current={idx === currentIndex ? "true" : undefined}
             >
-              <img src={item.src} alt="" className={styles.thumbImg} loading="lazy" />
+              <Image src={item.src} alt="" fill sizes="80px" className={styles.thumbImg} />
             </button>
           ))}
         </div>

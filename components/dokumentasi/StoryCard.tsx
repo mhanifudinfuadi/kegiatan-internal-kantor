@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import styles from "./DokumentasiIndex.module.css";
 
 type StoryPhoto = {
@@ -97,12 +98,13 @@ export default function StoryCard({
         {total > 0 ? (
           <div className={styles.coverSlider} aria-hidden="true">
             {photos.map((photo, idx) => (
-              <img
+              <Image
                 key={`${photo.src}-${idx}`}
                 src={photo.src}
                 alt=""
-                loading={idx === 0 ? "eager" : "lazy"}
-                decoding="async"
+                fill
+                sizes="(max-width: 760px) 100vw, 560px"
+                priority={idx === 0}
                 className={`${styles.coverImage} ${idx === safeActive ? styles.coverImageActive : ""}`}
               />
             ))}

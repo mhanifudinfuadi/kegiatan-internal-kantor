@@ -169,6 +169,8 @@
 
 .imageWrap {
   position: relative;
+  width: min(1100px, 92vw);
+  height: calc(72dvh - 3rem);
   border-radius: 1.2rem;
   overflow: hidden;
   box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.92), 0 0 0 1px rgba(242, 155, 189, 0.28);
@@ -176,11 +178,6 @@
 }
 
 .image {
-  display: block;
-  max-width: 100%;
-  max-height: calc(72dvh - 3rem);
-  width: auto;
-  height: auto;
   object-fit: contain;
 }
 

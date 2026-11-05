@@ -29,19 +29,6 @@ export default function Hero() {
       <div className={s.veil} aria-hidden="true" />
       <PetalCanvas className={s.petals} />
 
-      <nav className={s.nav} aria-label="Navigasi utama">
-        <Link href="/" className={s.logo}>
-          <i className={s.logoDot} aria-hidden="true" />
-          <span>{c.logo}</span>
-        </Link>
-        <div className={s.navCta}>
-          <Link href={c.navCta.href} className={s.pill}>
-            <span>{c.navCta.label}</span>
-            <span className={s.icon}><Arrow size={9} /></span>
-          </Link>
-        </div>
-      </nav>
-
       <div className={s.center}>
         <p className={s.kicker}>{c.kicker}</p>
         <h1 className={s.headline} aria-label={c.headline}>
@@ -50,6 +37,14 @@ export default function Hero() {
         <div className={s.actions}>
           <Link href={c.primaryCta.href} className={`${s.btn} ${s.btnSolid}`}>
             <span>{c.primaryCta.label}</span>
+            <span className={s.icon}><Arrow size={10} /></span>
+          </Link>
+          <Link href={c.secondaryCta.href} className={`${s.btn} ${s.btnGhost}`}>
+            <span>{c.secondaryCta.label}</span>
+            <span className={s.icon}><Arrow size={10} /></span>
+          </Link>
+          <Link href={c.showcaseCta.href} className={`${s.btn} ${s.btnGhost}`}>
+            <span>{c.showcaseCta.label}</span>
             <span className={s.icon}><Arrow size={10} /></span>
           </Link>
         </div>

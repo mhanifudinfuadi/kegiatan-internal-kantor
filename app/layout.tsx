@@ -5,8 +5,17 @@ import { fontDisplay, fontBody } from "./layout-fonts";
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: "イセリアル — Dokumentasi 087",
-  description: "The Dynamic Pulse",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://kegiatan-internal-kantor.vercel.app"),
+  title: {
+    default: "イセリアル — Dokumentasi 087",
+    template: "%s | Kegiatan Internal Kantor",
+  },
+  description: "Arsip dokumentasi kegiatan internal kantor Madu Jakbar Sport.",
+  openGraph: {
+    title: "イセリアル — Dokumentasi 087",
+    description: "Arsip dokumentasi kegiatan internal kantor Madu Jakbar Sport.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

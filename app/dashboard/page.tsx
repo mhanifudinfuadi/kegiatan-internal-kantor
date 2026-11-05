@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import Link from "next/link"
 import { uploadDokumentasi } from "./actions"
+import KelolaPostingan from "./kelola-postingan"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,9 +14,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { useTransition } from "react"
 import { Plus, Upload, ArrowLeft, Image as ImageIcon } from "lucide-react"
+import { DAFTAR_UNIT_KERJA } from "@/lib/unit-kerja"
 
 const schema = z.object({
   judul: z.string().min(1, "Judul wajib diisi"),
+  subJudul: z.string().optional(),
   keterangan: z.string().optional(),
   tanggal: z.string().optional(),
   unitKerja: z.string().optional(),
@@ -24,25 +27,27 @@ const schema = z.object({
 export default function DashboardPage() {
   const [pending, startTransition] = useTransition()
   const [lastUpload, setLastUpload] = useState<{ path: string | null; url: string | null } | null>(null)
+  const [refreshKey, setRefreshKey] = useState(0)
   const { toast } = useToast()
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: { judul: "", keterangan: "", tanggal: "", unitKerja: "" },
+    defaultValues: { judul: "", subJudul: "", keterangan: "", tanggal: "", unitKerja: "" },
   })
 
   async function onSubmit(values: z.infer<typeof schema>) {
     const formData = new FormData()
     const fileInput = document.getElementById("dokumentasi-file") as HTMLInputElement | null
-    const file = fileInput?.files?.[0] ?? null
+    const files = Array.from(fileInput?.files ?? [])
 
-    if (!file) {
+    if (files.length === 0) {
       toast({ title: "File belum dipilih", description: "Pilih foto kegiatan sebelum mengunggah." })
       return
     }
 
-    formData.append("file", file)
+    for (const file of files) formData.append("file", file)
     formData.append("judul", values.judul)
+    formData.append("subJudul", values.subJudul ?? "")
     formData.append("keterangan", values.keterangan ?? "")
     formData.append("tanggal", values.tanggal ?? "")
     formData.append("unitKerja", values.unitKerja ?? "")
@@ -51,7 +56,9 @@ export default function DashboardPage() {
       const result = await uploadDokumentasi(formData)
       if (result.ok) {
         setLastUpload({ path: result.path ?? null, url: result.url ?? null })
+        setRefreshKey((k) => k + 1)
         form.reset()
+        if (fileInput) fileInput.value = ""
         toast({ title: "Berhasil diunggah", description: result.message })
       } else {
         toast({ title: "Gagal mengunggah", description: result.message })
@@ -104,14 +111,29 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="unitKerja">Unit kerja</Label>
+              <Label htmlFor="subJudul">Sub judul (opsional)</Label>
+              <Input
+                id="subJudul"
+                placeholder="Contoh: Every Ending Holds a New Beginning"
+                {...form.register("subJudul")}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="unitKerja">Unit kerja / jenis kegiatan</Label>
               <Input
                 id="unitKerja"
-                placeholder="Contoh: Tim IT, Seksi Keuangan, Cabang Pusat"
+                list="daftar-unit-kerja"
+                placeholder="Contoh: Pisah Sambut"
                 {...form.register("unitKerja")}
               />
+              <datalist id="daftar-unit-kerja">
+                {DAFTAR_UNIT_KERJA.map((unit) => (
+                  <option key={unit.slug} value={unit.nama} />
+                ))}
+              </datalist>
               <p className="text-xs text-[#785f6b]">
-                Diisi bebas; digunakan untuk mengelompokkan dokumentasi per unit.
+                Pilih dari daftar atau isi bebas; digunakan untuk mengelompokkan dokumentasi per unit.
               </p>
             </div>
 
@@ -128,11 +150,12 @@ export default function DashboardPage() {
               <Input
                 id="dokumentasi-file"
                 type="file"
+                multiple
                 accept="image/jpeg,image/png,image/webp"
                 className="block w-full text-sm text-[#785f6b] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#c2587f]/20 file:text-[#7a3b52] hover:file:bg-[#c2587f]/40 border-none bg-transparent p-0"
               />
               <p className="text-xs text-[#785f6b]">
-                Format JPG, PNG atau WebP. Maksimal 8 MB.
+                Bisa pilih beberapa foto sekaligus. Format JPG, PNG atau WebP, maksimal 8 MB per foto.
               </p>
             </div>
 
@@ -161,7 +184,7 @@ export default function DashboardPage() {
                 <ImageIcon size={18} className="text-[#c2587f]" />
                 <div>
                   <p className="font-semibold text-[#3a2631]">Terakhir diunggah</p>
-                  <p className="text-sm text-[#785f6b]">{lastUpload.path}</p>
+                  <p className="text-sm text-[#785f6b]">Foto utama: {lastUpload.path}</p>
                 </div>
               </div>
               {lastUpload.url && (
@@ -175,6 +198,8 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+
+        <KelolaPostingan refreshKey={refreshKey} />
       </div>
     </main>
   )
