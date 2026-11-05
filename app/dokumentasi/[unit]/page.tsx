@@ -98,7 +98,7 @@ export default async function DokumentasiUnitPage({ params }: { params: Promise<
           <Link href="/dokumentasi">Dokumentasi</Link>
           <span>/</span>
           <span>{target.nama}</span>
-          <span className={styles.jp}>· 活動記録</span>
+          <span className={styles.jp}>· 美しい瞳、甘い笑顔</span>
         </div>
         <div className={styles.introHeader}>
           <p className={styles.kicker}>RAGAM CERITA · 物語 {target.nama.toUpperCase()}</p>

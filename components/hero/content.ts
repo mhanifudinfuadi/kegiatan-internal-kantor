@@ -4,7 +4,7 @@ export const heroContent = {
   headline: "True the Light",
   primaryCta: { label: "Go to the room", href: "/dokumentasi" },
   secondaryCta: { label: "Activity Highlights", href: "/galeri" },
-  showcaseCta: { label: "Showcase · Pindai Dokumentasi", href: "/talks-showcase" },
+  showcaseCta: { label: "Showcase · Let's Tallk", href: "/talks-showcase" },
   watermark: "Ethereal",
   subjectAlt: "Ilustrasi wanita berhijab dengan kimono merah muda dihiasi bunga sakura",
 } as const;

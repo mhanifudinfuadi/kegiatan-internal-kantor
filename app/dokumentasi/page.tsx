@@ -82,7 +82,7 @@ export default async function DokumentasiPage() {
           <Link href="/">Beranda</Link>
           <span>/</span>
           <span>Dokumentasi</span>
-          <span className={styles.jp}>· 活動記録</span>
+          <span className={styles.jp}>· 美しい瞳、甘い笑顔</span>
         </div>
         <div className={styles.introRow}>
           <div className={styles.introCopy}>

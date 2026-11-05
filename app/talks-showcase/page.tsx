@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import AudioPlayer from "@/components/AudioPlayer";
 
 const GLYPHS = "桜花月雪京炎鋼刃水火空心和道未来電脳夜風雲龍光夢";
 // Posisi garis scanner dari kiri stage (0.5 = tengah). 0.32 = bergeser ke kiri agar foto tampil lebih lama.
@@ -178,11 +179,12 @@ export default function TalksShowcasePage() {
   if (items.length === 0) {
     return (
       <main className="sc-page">
+        <AudioPlayer />
         <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet" />
         <header className="sc-nav">
           <div className="sc-brand">
             <div className="sc-brand-mark"></div>
-            <span>SAKURA / 活動記録</span>
+            <span style={{ fontSize: "20px" }}>美しい瞳、甘い笑顔</span>
           </div>
           <nav className="sc-nav-links">
             <Link href="/">BERANDA</Link>
@@ -193,7 +195,7 @@ export default function TalksShowcasePage() {
         <section className="sc" id="scan">
           <div className="wrap">
             <p className="eyebrow light">スキャン</p>
-            <h2 className="sc-title">Pindaian <span>Kegiatan</span></h2>
+            <h2 className="sc-title">Pindaian <span style={{ fontStyle: "normal" }}>Kegiatan</span></h2>
             <p className="sc-lead">Garis pemindai bergerak melintasi kartu kegiatan yang ada fotonya.</p>
             <div className="sc-empty">Belum ada foto kegiatan yang diunggah.</div>
           </div>
@@ -205,11 +207,12 @@ export default function TalksShowcasePage() {
 
   return (
     <main className="sc-page">
+      <AudioPlayer />
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet" />
       <header className="sc-nav">
         <div className="sc-brand">
           <div className="sc-brand-mark"></div>
-          <span>SAKURA / 活動記録</span>
+          <span style={{ fontSize: "20px" }}>美しい瞳、甘い笑顔</span>
         </div>
         <nav className="sc-nav-links">
           <Link href="/">BERANDA</Link>
@@ -220,10 +223,9 @@ export default function TalksShowcasePage() {
 
       <section className="sc" id="scan" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
         <div className="wrap">
-          <p className="eyebrow light">スキャン</p>
-          <h2 className="sc-title">Pindaian <span>Kegiatan</span></h2>
-          <p className="sc-lead">
-            {items.length} foto dokumentasi melintas di garis pemindai. Foto memudar menjadi aksara saat melewati garis.
+          <p className="eyebrow light" style={{ fontSize: "2rem" }}>アディルパ</p>
+          <h2 className="sc-title">Pindaian <span style={{ fontStyle: "normal" }}>Kegiatan</span></h2>
+          <p className="sc-lead">Bak sekuntum tulip di antara ribuan bunga, keindahannya begitu istimewa, seolah semesta hanya menakdirkannya untuk menjadi satu-satunya yang tak tergantikan.
           </p>
 
           <div className="sc-stage">
