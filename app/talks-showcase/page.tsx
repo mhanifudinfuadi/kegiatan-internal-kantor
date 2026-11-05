@@ -65,19 +65,30 @@ export default function TalksShowcasePage() {
         const res = await fetch("/api/kegiatan", { cache: "no-store" });
         if (!res.ok) return;
         const json = await res.json();
-        if (mounted && json?.kegiatan) {
+        if (mounted && Array.isArray(json?.kegiatan)) {
           const cards = buildScanCards(json.kegiatan);
           setItems(cards);
         }
       } catch (e) {}
     }
     load();
-    const iv = setInterval(load, 5000);
+    const refresh = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    const iv = setInterval(refresh, 30_000);
     return () => {
       mounted = false;
       clearInterval(iv);
     };
   }, []);
+
+  const getCenterOffset = (track: HTMLElement) => {
+    const stage = track.parentElement;
+    if (!stage) return 0;
+    const first = track.children[0] as HTMLElement | undefined;
+    if (!first) return 0;
+    return stage.clientWidth / 2 - first.getBoundingClientRect().width / 2;
+  };
 
   const updateDissolve = (track: HTMLElement) => {
     const stage = track.parentElement;
@@ -87,7 +98,8 @@ export default function TalksShowcasePage() {
     for (let i = 0; i < cards.length; i++) {
       const card = cards[i] as HTMLElement;
       const rect = card.getBoundingClientRect();
-      const lewat = (beamX - rect.right) / Math.max(rect.width, 1);
+      const cardCenter = rect.left + rect.width / 2;
+      const lewat = (beamX - cardCenter) / Math.max(rect.width, 1);
       const progress = Math.min(Math.max(lewat, 0), 1);
       const prev = card.dataset.dissolve;
       const next = progress.toFixed(3);
@@ -103,7 +115,9 @@ export default function TalksShowcasePage() {
   useEffect(() => {
     if (!trackRef.current || items.length === 0) return;
     const track = trackRef.current;
+    const center = getCenterOffset(track);
     if (reduced) {
+      track.style.transform = `translateX(${center}px)`;
       updateDissolve(track);
       return;
     }
@@ -118,7 +132,7 @@ export default function TalksShowcasePage() {
       if (loopWidth > 0 && Math.abs(positionRef.current) >= loopWidth) {
         positionRef.current += loopWidth;
       }
-      track.style.transform = `translateX(${positionRef.current}px)`;
+      track.style.transform = `translateX(${positionRef.current + center}px)`;
       updateDissolve(track);
       rafRef.current = requestAnimationFrame(animate);
     };
@@ -132,7 +146,8 @@ export default function TalksShowcasePage() {
     positionRef.current = 0;
     const track = trackRef.current;
     if (!track) return;
-    track.style.transform = "translateX(0px)";
+    const center = getCenterOffset(track);
+    track.style.transform = `translateX(${center}px)`;
     updateDissolve(track);
   }, [items.length]);
 
@@ -165,6 +180,7 @@ export default function TalksShowcasePage() {
           <nav className="sc-nav-links">
             <Link href="/">BERANDA</Link>
             <Link href="/dokumentasi">DOKUMENTASI</Link>
+            <Link href="/galeri">GALERI</Link>
           </nav>
         </header>
         <section className="sc" id="scan">
@@ -191,6 +207,7 @@ export default function TalksShowcasePage() {
         <nav className="sc-nav-links">
           <Link href="/">BERANDA</Link>
           <Link href="/dokumentasi">DOKUMENTASI</Link>
+          <Link href="/galeri">GALERI</Link>
         </nav>
       </header>
 
