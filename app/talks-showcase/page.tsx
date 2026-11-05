@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 const GLYPHS = "桜花月雪京炎鋼刃水火空心和道未来電脳夜風雲龍光夢";
+// Posisi garis scanner dari kiri stage (0.5 = tengah). 0.32 = bergeser ke kiri agar foto tampil lebih lama.
+const BEAM_POS = 0.32;
 
 type PhotoItem = {
   key: string;
@@ -82,18 +84,23 @@ export default function TalksShowcasePage() {
     };
   }, []);
 
+  const getBeamX = (stage: HTMLElement) => {
+    const rect = stage.getBoundingClientRect();
+    return rect.left + rect.width * BEAM_POS;
+  };
+
   const getCenterOffset = (track: HTMLElement) => {
     const stage = track.parentElement;
     if (!stage) return 0;
     const first = track.children[0] as HTMLElement | undefined;
     if (!first) return 0;
-    return stage.clientWidth / 2 - first.getBoundingClientRect().width / 2;
+    return stage.clientWidth * BEAM_POS - first.getBoundingClientRect().width / 2;
   };
 
   const updateDissolve = (track: HTMLElement) => {
     const stage = track.parentElement;
     if (!stage) return;
-    const beamX = stage.getBoundingClientRect().left + stage.clientWidth / 2;
+    const beamX = getBeamX(stage);
     const cards = track.children;
     for (let i = 0; i < cards.length; i++) {
       const card = cards[i] as HTMLElement;
@@ -297,7 +304,7 @@ const styles = `
   .sc-tag { font-size: 10px; letter-spacing: .28em; text-transform: uppercase; color: #ffc3da; transition: opacity 280ms ease; }
   .sc-info h2 { margin: 0; font: 400 clamp(1.2rem, 2.4vw, 1.6rem)/1.26 'Shippori Mincho', serif; }
   .sc-info p { margin: 0; font-size: 11px; letter-spacing: .12em; color: #e7c9d8; }
-  .sc-beam { position: absolute; z-index: 5; top: 50%; left: 50%; height: clamp(320px, 46vw, 420px); width: 2px; transform: translate(-50%, -50%); pointer-events: none; background: linear-gradient(180deg, transparent, rgba(255,208,224,.9) 10%, #fff 50%, rgba(255,208,224,.9) 90%, transparent); box-shadow: 0 0 14px 6px #ffd0e0, 0 0 44px 18px #ff8dbd99, 0 0 120px 30px #ff8dbd44; }
+  .sc-beam { position: absolute; z-index: 5; top: 50%; left: 32%; height: clamp(320px, 46vw, 420px); width: 2px; transform: translate(-50%, -50%); pointer-events: none; background: linear-gradient(180deg, transparent, rgba(255,208,224,.9) 10%, #fff 50%, rgba(255,208,224,.9) 90%, transparent); box-shadow: 0 0 14px 6px #ffd0e0, 0 0 44px 18px #ff8dbd99, 0 0 120px 30px #ff8dbd44; }
   .sc-beam::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 220px; transform: translateX(-50%); background: linear-gradient(90deg, transparent, rgba(255,134,190,.08) 40%, rgba(255,174,211,.22) 50%, rgba(255,134,190,.08) 60%, transparent); filter: blur(12px); }
   .sc-beam::after { content: ""; position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; border-radius: 50%; transform: translate(-50%, -50%); background: #fff; box-shadow: 0 0 16px 8px #fff, 0 0 40px 18px #ff9fc8; }
   .sc-controls { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: clamp(1.2rem, 4vw, 2rem); }
