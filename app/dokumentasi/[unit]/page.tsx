@@ -136,21 +136,19 @@ export default async function DokumentasiUnitPage({ params }: { params: Promise<
                   {item.subJudul && <p className={styles.kicker}>{item.subJudul}</p>}
                 </header>
                 {item.keterangan && <p className={styles.keterangan}>{item.keterangan}</p>}
-                {/* TAMPILKAN SEMUA FOTO - bukan hanya yang punya photoUrls */}
-                {allPhotos.length > 0 && (
-                  <UnitPhotoGrid
-                    itemJudul={item.judul}
-                    photos={[ ...allPhotos, ...(allPhotos.length > 2 ? [item.judul as any] : []) ].map((src, idx) => ({
-                      src: String(src),
-                      title: allPhotos.length > 1 ? `${item.judul} (#${idx + 1})` : item.judul,
-                      unit: target.nama,
-                      date: formatTanggalLengkap(item.tanggal || item.createdAt),
-                      isFirstHero: allPhotos.length > 2 && idx === 0,
-                      total: allPhotos.length + (allPhotos.length > 2 ? 1 : 0),
-                      overallIndex: idx,
-                    }))}
-                  />
-                )}
+                {/* TAMPILKAN SEMUA FOTO - semua foto dari bucket dan relasi */}
+                <UnitPhotoGrid
+                  itemJudul={item.judul}
+                  photos={allPhotos.map((src, idx) => ({
+                    src: String(src),
+                    title: allPhotos.length > 1 ? `${item.judul} (#${idx + 1})` : item.judul,
+                    unit: target.nama,
+                    date: formatTanggalLengkap(item.tanggal || item.createdAt),
+                    isFirstHero: allPhotos.length > 2 && idx === 0,
+                    total: allPhotos.length,
+                    overallIndex: idx,
+                  }))}
+                />
               </div>
             </article>
           );
