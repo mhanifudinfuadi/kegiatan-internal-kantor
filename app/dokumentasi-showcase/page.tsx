@@ -14,17 +14,16 @@ export default async function DokumentasiShowcasePage() {
   const all: Array<{ src: string; unit: string; title: string; tanggal: string; slug: string }> = [];
 
   for (const k of kegiatan) {
-    const urls = (k.fotoUrls && k.fotoUrls.length > 0)
-      ? k.fotoUrls
-      : (k.fotoUrl ? [k.fotoUrl] : []);
+    // SEMUA FOTO dari fotoUrls DAN fotoUrl (jika ada), bukan hanya yang punya photoUrls
+    const allPhotos = [...(k.fotoUrls || []), k.fotoUrl ?? ""];
 
-    for (let j = 0; j < urls.length; j++) {
-      const src = urls[j];
+    for (let j = 0; j < allPhotos.length; j++) {
+      const src = allPhotos[j];
       if (src) {
         all.push({
           src,
           unit: k.unitKerja,
-          title: urls.length > 1 ? `${k.judul} (#${j + 1})` : k.judul,
+          title: allPhotos.length > 1 ? `${k.judul} (#${j + 1})` : k.judul,
           tanggal: k.tanggal ?? "",
           slug: k.unitKerjaSlug,
         });
