@@ -120,12 +120,11 @@ export default async function DokumentasiUnitPage({ params }: { params: Promise<
 
       <section className={styles.timeline} aria-label="Timeline kegiatan">
         {items.map((item) => {
-          const rawPhotos = (item.fotoUrls && item.fotoUrls.length > 0)
-            ? item.fotoUrls
-            : [item.fotoUrl];
-          const photos = rawPhotos
+          // SEMUA FOTO dari fotoUrls DAN fotoUrl (jika ada), bukan hanya yang punya photoUrls
+          const allPhotos = [...(item.fotoUrls || []), item.fotoUrl ?? ""]
             .map(safePhotoUrl)
-            .filter((p): p is string => Boolean(p));
+            .filter(Boolean); // HANYA filter null/undefined, tidak hapus yang kosong
+
           return (
             <article key={item.id} className={styles.event}>
               <div className={styles.dateColumn}>
@@ -139,16 +138,17 @@ export default async function DokumentasiUnitPage({ params }: { params: Promise<
                   {item.subJudul && <p className={styles.kicker}>{item.subJudul}</p>}
                 </header>
                 {item.keterangan && <p className={styles.keterangan}>{item.keterangan}</p>}
-                {photos.length > 0 && (
+                {/* TAMPILKAN SEMUA FOTO - bukan hanya yang punya photoUrls */}
+                {allPhotos.length > 0 && (
                   <UnitPhotoGrid
                     itemJudul={item.judul}
-                    photos={photos.map((src, idx) => ({
+                    photos={allPhotos.map((src, idx) => ({
                       src,
-                      title: photos.length > 1 ? `${item.judul} (#${idx + 1})` : item.judul,
+                      title: allPhotos.length > 1 ? `${item.judul} (#${idx + 1})` : item.judul,
                       unit: target.nama,
                       date: formatTanggalLengkap(item.tanggal || item.createdAt),
-                      isFirstHero: photos.length > 2 && idx === 0,
-                      total: photos.length,
+                      isFirstHero: allPhotos.length > 2 && idx === 0,
+                      total: allPhotos.length,
                       overallIndex: idx,
                     }))}
                   />
