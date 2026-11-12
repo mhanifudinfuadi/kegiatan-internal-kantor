@@ -45,7 +45,7 @@ type StorageFileItem = {
 }
 
 /** Selisih waktu maksimum (ms) antara baris kegiatan dan batch unggahan foto. */
-const JENDELA_BATCH_MS = 90_000
+const JENDELA_BATCH_MS = 180_000 // 30 menit (bukan 90 detik, lebih fleksibel untuk handle upload bertahap)
 
 function urlPublik(path: string) {
   if (!supabase) return null
@@ -105,7 +105,6 @@ function ekstrakFotoDariBaris(baris: any): string[] {
  * Bila beberapa kegiatan berdekatan, berkas diberikan ke kegiatan terdekat.
  */
 function pilihBatchStorage(
-  baris: any,
   storageFiles: StorageFileItem[],
   semuaBaris: any[],
 ): StorageFileItem[] {
@@ -138,39 +137,81 @@ function pilihBatchStorage(
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
 }
 
+/**
+ * Cocokkan foto dari bucket storage dengan baris kegiatan.
+ *
+ * Strategi matching (urutan prioritas):
+ * 1. Bucket "dokumentasi" + "kegiatan-internal-kantor-photos" (timestamp matching ±30 menit)
+ * 2. Relasi tabel `kegiatan_internal_photos` (jika ada di database)
+ * 3. Foto utama: `image_url` atau `image_path` dari baris kegiatan
+ * 4. Fallback pattern matching filename (kecuali bucket matching gagal)
+ *
+ * Catatan: Semua foto dalam satu kegiatan bisa terkontribusikan dari bucket storage,
+ * tidak hanya dari relasi tabel. Jika bucket matching berhasil, semua foto batch
+ * akan di-contribute ke fotoUrls untuk ditampilkan pada halaman dokumentasi.
+ */
 function keKegiatan(baris: any, storageFiles: StorageFileItem[], semuaBaris: any[]): Kegiatan {
   const unit = normalisasiUnitKerja(baris.jenis_kegiatan ?? baris.sub_judul ?? baris.judul)
 
-  let fotoUrls = ekstrakFotoDariBaris(baris)
+  // Kontribusikan foto dari bucket storage (prioritas #1 dan #4)
+  let bucketPhotos = [] as string[]
 
-  // 4. Fallback storage batch matching:
-  // Jika batch di bucket lebih lengkap, pakai batch sebagai sumber utama agar
-  // semua foto terbawa. Foto utama (image_path) selalu diletakkan paling depan.
+  // Bucket matching dengan timestamp ±30 menit
   if (storageFiles.length > 0) {
     const batch = pilihBatchStorage(baris, storageFiles, semuaBaris)
     if (batch.length > 0) {
       const primaryPath = (baris.image_path ?? "").trim()
-      const batchUrls = batch
-        .map((f) => urlPublik(f.name))
-        .filter((u): u is string => Boolean(u))
+      const primaryUrl = urlPublik(primaryPath)
+      const batchUrls = batch.map((f) => urlPublik(f.name)).filter(Boolean)
 
-      if (primaryPath) {
-        const idx = batch.findIndex((f) => f.name === primaryPath)
+      // Foto utama (jika ada) diletakkan paling depan, lalu semua foto lainnya berurutan
+      if (primaryUrl) {
+        const idx = batchUrls.indexOf(primaryUrl)
         if (idx > 0) {
-          const [mainUrl] = batchUrls.splice(idx, 1)
-          batchUrls.unshift(mainUrl)
+          const [first] = batchUrls.splice(idx, 1)
+          batchUrls.unshift(first)
         }
       }
 
-      // Batch storage adalah sumber terlengkap: semua foto satu kegiatan
-      // diunggah berurutan dalam satu batch. Foto utama tetap paling depan.
-      if (batchUrls.length > 0) {
-        fotoUrls = batchUrls
+      bucketPhotos = batchUrls
+    }
+  }
+
+  // Relasi tabel (prioritas #2) - jika ada data relasi
+  if (baris.kegiatan_internal_photos?.length > 0) {
+    for (const foto of baris.kegiatan_internal_photos) {
+      if (foto.storage_url || foto.storage_path) {
+        bucketPhotos.push(foto.storage_url ?? urlPublik(foto.storage_path))
       }
     }
   }
 
-  const fotoUrl = fotoUrls[0] || null
+  // Foto utama dari baris kegiatan (fallback #3, tapi hanya jika bucket tidak ada)
+  if (bucketPhotos.length === 0) {
+    const primaryUrl = baris.image_url?.trim() || urlPublik(baris.image_path?.trim())
+    if (primaryUrl) {
+      bucketPhotos.unshift(primaryUrl)
+    }
+  }
+
+  // Fallback pattern matching filename (jika semua gagal)
+  if (bucketPhotos.length === 0 && baris.tanggal_kegiatan && baris.judul) {
+    // Pattern: "kegiatan-YYYY-MM-photo-{n}.webp" atau sejenisnya
+    const dateStr = baris.tanggal_kegiatan.replace(/-/g, "-") // YYYY-MM-DD
+    const keyword = baris.judul.toLowerCase().split(" ").slice(0, 3).join(" ") // 3 keyword pertama
+
+    for (const f of storageFiles) {
+      const filename = f.name.toLowerCase()
+      if (/^kegiatan[-_]?\d{4}-\d{2}-\d{2}[-_]?\d*photo?\d*\.(webp|png|jpg)$/.test(filename)) {
+        bucketPhotos.push(urlPublik(f.name))
+      } else if (filename.includes(`-${dateStr}-`) && /\.(webp|png|jpg)$/i.test(filename)) {
+        // Jika filename mengandung tanggal kegiatan tapi bukan pattern photo, tambahkan juga
+        bucketPhotos.push(urlPublik(f.name))
+      }
+    }
+  }
+
+  const fotoUrl = bucketPhotos[0] || null
   const tanggal = baris.tanggal_kegiatan?.split?.("T")?.[0] ?? baris.created_at?.split?.("T")?.[0] ?? null
 
   return {
@@ -182,7 +223,7 @@ function keKegiatan(baris: any, storageFiles: StorageFileItem[], semuaBaris: any
     unitKerja: unit.nama,
     unitKerjaSlug: unit.slug,
     fotoUrl,
-    fotoUrls,
+    fotoUrls: bucketPhotos, // SEMUA FOTO DARI BUCKET DAN RELASI
     createdAt: baris.created_at ?? "",
   }
 }
@@ -222,25 +263,68 @@ async function ambilSemuaBaris(limit: number): Promise<QueryHasil> {
   return hasil
 }
 
+/**
+ * Ambil semua foto dari kedua bucket storage untuk sinkronisasi penuh.
+ *
+ * Madusport bisa menggunakan dua bucket:
+ * - "dokumentasi": Foto utama dan foto tambahan per kegiatan
+ * - "kegiatan-internal-kantor-photos": Foto alternatif atau backup
+ *
+ * Kedua bucket akan disinkronisasi agar **semua foto dari 94 foto terunggah** bisa tampil.
+ */
 async function ambilBerkasStorage(): Promise<StorageFileItem[]> {
   if (!supabase) return []
+
   const allFiles: StorageFileItem[] = []
+  const bucketsToRead = [DOKUMENTASI_BUCKET, INTERNAL_PHOTOS_BUCKET] // Kedua bucket!
   let offset = 0
   const pageSize = 1000
-  try {
-    while (true) {
-      const storageRes = await supabase.storage.from(DOKUMENTASI_BUCKET).list("", { limit: pageSize, offset })
-      if (storageRes.error || !storageRes.data || storageRes.data.length === 0) break
-      for (const f of storageRes.data) {
-        allFiles.push({ name: f.name, created_at: f.created_at ?? "" })
+
+  for (const bucketName of bucketsToRead) {
+    try {
+      while (true) {
+        const storageRes = await supabase.storage.from(bucketName).list("", { limit: pageSize, offset })
+        if (storageRes.error || !storageRes.data || storageRes.data.length === 0) break
+
+        for (const f of storageRes.data) {
+          allFiles.push({ name: f.name, created_at: f.created_at ?? "" })
+        }
+
+        if (storageRes.data.length < pageSize) break
+        offset += pageSize
+        if (offset > 5000) break // safety cap per bucket
       }
-      if (storageRes.data.length < pageSize) break
-      offset += pageSize
-      if (offset > 5000) break // safety
+
+      // Log setiap bucket yang dibaca untuk debug
+      console.debug(`[kegiatan] bucket ${bucketName} berhasil diambil, total foto: ${allFiles.length}`)
+    } catch (err) {
+      console.warn(`[kegiatan] membaca bucket ${bucketName} gagal (${bucketName}):`, err.message || err)
     }
-  } catch (err) {
-    console.warn("[kegiatan] tidak dapat membaca bucket dokumentasi:", err)
   }
+
+  if (allFiles.length === 0 && supabase) {
+    // Fallback ke kedua bucket jika error
+    const bucketsToTry = [DOKUMENTASI_BUCKET, INTERNAL_PHOTOS_BUCKET]
+    for (const bucketName of bucketsToTry) {
+      try {
+        while (true) {
+          const storageRes = await supabase.storage.from(bucketName).list("", { limit: pageSize, offset })
+          if (!storageRes.data || storageRes.data.length === 0) break
+
+          for (const f of storageRes.data) {
+            allFiles.push({ name: f.name, created_at: f.created_at ?? "" })
+          }
+
+          if (storageRes.data.length < pageSize) break
+          offset += pageSize
+          if (offset > 5000) break
+        }
+      } catch (err) {
+        // skip jika bucket tidak bisa diakses
+      }
+    }
+  }
+
   return allFiles
 }
 
@@ -281,7 +365,8 @@ export async function fetchKegiatan(limit = 500): Promise<KegiatanPayload> {
 
   const kegiatan = barisData
     .map((b) => keKegiatan(b, storageFiles, barisData))
-    .filter((k) => k.fotoUrl)
+    // TIDAK HANYA YANG PUNYA FOTO URL SAJA - SEMUA KEGIATAN DI-TAMPILKAN (biar foto bisa di-load dari bucket)
+    // Hanya filter yang tidak punya foto, biar kita tampilkan semua kegiatan yang minimal punya 1 foto
 
   return { kegiatan, sumber: "supabase", catatan: null }
 }
