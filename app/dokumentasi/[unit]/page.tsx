@@ -121,9 +121,7 @@ export default async function DokumentasiUnitPage({ params }: { params: Promise<
       <section className={styles.timeline} aria-label="Timeline kegiatan">
         {items.map((item) => {
           // SEMUA FOTO dari fotoUrls DAN fotoUrl (jika ada), bukan hanya yang punya photoUrls
-          const allPhotos = [...(item.fotoUrls || []), item.fotoUrl ?? ""]
-            .map(safePhotoUrl)
-            .filter(Boolean); // HANYA filter null/undefined, tidak hapus yang kosong
+          const allPhotos = [ ...(item.fotoUrls || []), ...(item.fotoUrl ? [item.fotoUrl] : []) ] as string[]
 
           return (
             <article key={item.id} className={styles.event}>
@@ -142,13 +140,13 @@ export default async function DokumentasiUnitPage({ params }: { params: Promise<
                 {allPhotos.length > 0 && (
                   <UnitPhotoGrid
                     itemJudul={item.judul}
-                    photos={allPhotos.map((src, idx) => ({
-                      src,
+                    photos={[ ...allPhotos, ...(allPhotos.length > 2 ? [item.judul as any] : []) ].map((src, idx) => ({
+                      src: String(src),
                       title: allPhotos.length > 1 ? `${item.judul} (#${idx + 1})` : item.judul,
                       unit: target.nama,
                       date: formatTanggalLengkap(item.tanggal || item.createdAt),
                       isFirstHero: allPhotos.length > 2 && idx === 0,
-                      total: allPhotos.length,
+                      total: allPhotos.length + (allPhotos.length > 2 ? 1 : 0),
                       overallIndex: idx,
                     }))}
                   />

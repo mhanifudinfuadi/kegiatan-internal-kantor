@@ -45,9 +45,11 @@ type StorageFileItem = {
 }
 
 /** Selisih waktu maksimum (ms) antara baris kegiatan dan batch unggahan foto. */
-const JENDELA_BATCH_MS = 180_000 // 30 menit (bukan 90 detik, lebih fleksibel untuk handle upload bertahap)
+const JENDELA_BATCH_MS = 180_000 // 30 menit (lebih fleksibel untuk handle upload bertahap)
 
-function urlPublik(path: string) {
+interface ActivityRow extends Record<string, any> {}
+
+function urlPublik(path: string): string | null {
   if (!supabase) return null
   return supabase.storage.from(DOKUMENTASI_BUCKET).getPublicUrl(path).data.publicUrl || null
 }
@@ -108,6 +110,7 @@ function pilihBatchStorage(
   storageFiles: StorageFileItem[],
   semuaBaris: any[],
 ): StorageFileItem[] {
+  const baris: ActivityRow = {};
   const rowTime = baris.created_at ? new Date(baris.created_at).getTime() : 0
   if (!rowTime) return []
 
@@ -150,45 +153,47 @@ function pilihBatchStorage(
  * tidak hanya dari relasi tabel. Jika bucket matching berhasil, semua foto batch
  * akan di-contribute ke fotoUrls untuk ditampilkan pada halaman dokumentasi.
  */
-function keKegiatan(baris: any, storageFiles: StorageFileItem[], semuaBaris: any[]): Kegiatan {
+function keKegiatan(baris: ActivityRow, storageFiles: StorageFileItem[], semuaBaris: any[]): Kegiatan {
   const unit = normalisasiUnitKerja(baris.jenis_kegiatan ?? baris.sub_judul ?? baris.judul)
 
   // Kontribusikan foto dari bucket storage (prioritas #1 dan #4)
-  let bucketPhotos = [] as string[]
+  let bucketPhotos: string[] = []
 
   // Bucket matching dengan timestamp ±30 menit
-  if (storageFiles.length > 0) {
-    const batch = pilihBatchStorage(baris, storageFiles, semuaBaris)
+  if (storageFiles.length > 0 && Object.keys(baris).length > 0) {
+    const batch = pilihBatchStorage(storageFiles, semuaBaris)
     if (batch.length > 0) {
-      const primaryPath = (baris.image_path ?? "").trim()
+      const primaryPath = (baris.image_path || "").trim()
       const primaryUrl = urlPublik(primaryPath)
-      const batchUrls = batch.map((f) => urlPublik(f.name)).filter(Boolean)
+      const batchUrls: string[] = batch.map((f) => urlPublik(f.name)).filter(Boolean as any)
 
       // Foto utama (jika ada) diletakkan paling depan, lalu semua foto lainnya berurutan
       if (primaryUrl) {
         const idx = batchUrls.indexOf(primaryUrl)
         if (idx > 0) {
           const [first] = batchUrls.splice(idx, 1)
-          batchUrls.unshift(first)
+          bucketPhotos.unshift(first as string)
+        } else {
+          bucketPhotos.unshift(primaryUrl)
         }
+      } else {
+        bucketPhotos = batchUrls
       }
-
-      bucketPhotos = batchUrls
     }
   }
 
   // Relasi tabel (prioritas #2) - jika ada data relasi
-  if (baris.kegiatan_internal_photos?.length > 0) {
-    for (const foto of baris.kegiatan_internal_photos) {
+  if (baris.kegiatan_internal_photos && baris.kegiatan_internal_photos.length > 0) {
+    for (const foto of baris.kegiatan_internal_photos as any) {
       if (foto.storage_url || foto.storage_path) {
-        bucketPhotos.push(foto.storage_url ?? urlPublik(foto.storage_path))
+        bucketPhotos.push(foto.storage_url ?? (urlPublik(foto.storage_path) as string))
       }
     }
   }
 
   // Foto utama dari baris kegiatan (fallback #3, tapi hanya jika bucket tidak ada)
   if (bucketPhotos.length === 0) {
-    const primaryUrl = baris.image_url?.trim() || urlPublik(baris.image_path?.trim())
+    const primaryUrl = (baris.image_url || urlPublik(baris.image_path || "")) as string | null
     if (primaryUrl) {
       bucketPhotos.unshift(primaryUrl)
     }
@@ -196,17 +201,15 @@ function keKegiatan(baris: any, storageFiles: StorageFileItem[], semuaBaris: any
 
   // Fallback pattern matching filename (jika semua gagal)
   if (bucketPhotos.length === 0 && baris.tanggal_kegiatan && baris.judul) {
-    // Pattern: "kegiatan-YYYY-MM-photo-{n}.webp" atau sejenisnya
-    const dateStr = baris.tanggal_kegiatan.replace(/-/g, "-") // YYYY-MM-DD
-    const keyword = baris.judul.toLowerCase().split(" ").slice(0, 3).join(" ") // 3 keyword pertama
+    const dateStr = baris.tanggal_kegiatan.replace(/-/g, "-")
+    const keyword = baris.judul.toLowerCase().split(" ").slice(0, 3).join(" ")
 
     for (const f of storageFiles) {
       const filename = f.name.toLowerCase()
       if (/^kegiatan[-_]?\d{4}-\d{2}-\d{2}[-_]?\d*photo?\d*\.(webp|png|jpg)$/.test(filename)) {
-        bucketPhotos.push(urlPublik(f.name))
-      } else if (filename.includes(`-${dateStr}-`) && /\.(webp|png|jpg)$/i.test(filename)) {
-        // Jika filename mengandung tanggal kegiatan tapi bukan pattern photo, tambahkan juga
-        bucketPhotos.push(urlPublik(f.name))
+        bucketPhotos.push(urlPublik(f.name) as string)
+      } else if (filename.includes(`-${dateStr}-`) && /\.(webp|png|jpg)/.test(filename)) {
+        bucketPhotos.push(urlPublik(f.name) as string)
       }
     }
   }
@@ -216,15 +219,15 @@ function keKegiatan(baris: any, storageFiles: StorageFileItem[], semuaBaris: any
 
   return {
     id: String(baris.id),
-    judul: (baris.judul ?? "").trim() || "Kegiatan Tanpa Judul",
+    judul: (baris.judul || "").trim() || "Kegiatan Tanpa Judul",
     subJudul: baris.sub_judul?.trim() || null,
     keterangan: baris.cerita_kegiatan?.trim() ? baris.cerita_kegiatan.trim() : baris.sub_judul?.trim() || null,
     tanggal,
     unitKerja: unit.nama,
     unitKerjaSlug: unit.slug,
     fotoUrl,
-    fotoUrls: bucketPhotos, // SEMUA FOTO DARI BUCKET DAN RELASI
-    createdAt: baris.created_at ?? "",
+    fotoUrls: bucketPhotos as string[],
+    createdAt: baris.created_at || "",
   }
 }
 
@@ -298,7 +301,7 @@ async function ambilBerkasStorage(): Promise<StorageFileItem[]> {
       // Log setiap bucket yang dibaca untuk debug
       console.debug(`[kegiatan] bucket ${bucketName} berhasil diambil, total foto: ${allFiles.length}`)
     } catch (err) {
-      console.warn(`[kegiatan] membaca bucket ${bucketName} gagal (${bucketName}):`, err.message || err)
+      console.warn(`[kegiatan] membaca bucket ${bucketName} gagal (${bucketName}):`, err instanceof Error ? err.message : String(err))
     }
   }
 
