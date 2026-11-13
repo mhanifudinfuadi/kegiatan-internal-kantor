@@ -69,6 +69,19 @@ function pathDariUrl(url: string, bucket: string): string | null {
 }
 
 /**
+ * Kunci identitas sebuah foto: path relatif di dalam bucket.
+ * Dipakai agar foto yang sama tetap dikenali walau URL-nya berbeda bentuk
+ * (mis. `image_url` lama vs URL publik yang dihitung ulang).
+ */
+function kunciFoto(url: string): string {
+  for (const bucket of [DOKUMENTASI_BUCKET, INTERNAL_PHOTOS_BUCKET]) {
+    const path = pathDariUrl(url, bucket)
+    if (path) return path
+  }
+  return url
+}
+
+/**
  * Kumpulkan SEMUA foto milik satu baris kegiatan dari seluruh sumber
  * (`photos` JSONB, relasi `kegiatan_internal_photos`, `image_path`/`image_url`).
  * Tidak ada penyaringan: semua URL yang tercatat akan dikembalikan apa adanya.
@@ -78,8 +91,10 @@ function kumpulkanFotoEksplisit(baris: any): FotoEntri[] {
   const terlihat = new Set<string>()
   const tambah = (url: string | null | undefined, waktu = 0) => {
     const bersih = (url ?? "").trim()
-    if (!bersih || terlihat.has(bersih)) return
-    terlihat.add(bersih)
+    if (!bersih) return
+    const kunci = kunciFoto(bersih)
+    if (terlihat.has(kunci)) return
+    terlihat.add(kunci)
     hasil.push({ url: bersih, time: Number.isFinite(waktu) ? waktu : 0 })
   }
 
@@ -131,11 +146,7 @@ function pisahkanFotoStorage(barisData: any[], storageFiles: StorageFileItem[]) 
   const tertaut = new Set<string>()
   for (const baris of barisData) {
     for (const entri of kumpulkanFotoEksplisit(baris)) {
-      tertaut.add(entri.url)
-      for (const bucket of [DOKUMENTASI_BUCKET, INTERNAL_PHOTOS_BUCKET]) {
-        const path = pathDariUrl(entri.url, bucket)
-        if (path) tertaut.add(urlPublik(path, bucket) ?? "")
-      }
+      tertaut.add(kunciFoto(entri.url))
     }
   }
 
@@ -143,8 +154,8 @@ function pisahkanFotoStorage(barisData: any[], storageFiles: StorageFileItem[]) 
   const terlihat = new Set<string>()
   for (const f of storageFiles) {
     const url = urlPublik(f.name, f.bucket)
-    if (!url || tertaut.has(url) || terlihat.has(url)) continue
-    terlihat.add(url)
+    if (!url || tertaut.has(kunciFoto(url)) || terlihat.has(kunciFoto(url))) continue
+    terlihat.add(kunciFoto(url))
     lepas.push({ url, time: waktuDari(f.created_at) })
   }
 
@@ -152,17 +163,53 @@ function pisahkanFotoStorage(barisData: any[], storageFiles: StorageFileItem[]) 
   return { lepas }
 }
 
-/** Kegiatan yang paling dekat waktunya dengan sebuah foto lepas. */
-function kegiatanTerdekat(
-  waktuFoto: number,
-  waktuBaris: Array<{ id: string; time: number }>,
-): string | null {
-  let terbaik: { id: string; jarak: number } | null = null
-  for (const b of waktuBaris) {
-    const jarak = Math.abs(b.time - waktuFoto)
-    if (!terbaik || jarak < terbaik.jarak) terbaik = { id: b.id, jarak }
+/**
+ * Kelompokkan foto lepas menjadi "batch" unggahan: berkas yang dibuat berdekatan
+ * (selisih maksimum `JEDA_BATCH_MS`) dianggap satu kali unggah di dashboard.
+ */
+const JEDA_BATCH_MS = 10 * 60 * 1000 // 10 menit
+
+function kelompokkanBatch(foto: FotoEntri[]): FotoEntri[][] {
+  const batch: FotoEntri[][] = []
+  for (const f of foto) {
+    const terakhir = batch[batch.length - 1]
+    if (terakhir && f.time - terakhir[terakhir.length - 1].time <= JEDA_BATCH_MS) {
+      terakhir.push(f)
+    } else {
+      batch.push([f])
+    }
   }
-  return terbaik?.id ?? null
+  return batch
+}
+
+/**
+ * Tentukan kegiatan pemilik setiap batch foto lepas.
+ *
+ * Satu batch unggahan hanya boleh dimiliki SATU kegiatan (kegiatan terdekat),
+ * sehingga foto tidak tercampur antar kegiatan. Batch yang tidak berdekatan
+ * dengan kegiatan mana pun (mis. sisa unggahan postingan yang sudah dihapus
+ * admin) tidak ditampilkan — arsip tetap sinkron dengan dashboard.
+ */
+const JENDELA_LEPAS_MS = 6 * 60 * 60 * 1000 // 6 jam
+
+function petakanFotoLepas(
+  lepas: FotoEntri[],
+  waktuBaris: Array<{ id: string; time: number }>,
+): Map<string, FotoEntri[]> {
+  const hasil = new Map<string, FotoEntri[]>()
+  for (const batch of kelompokkanBatch(lepas)) {
+    const tengah = batch[0].time
+    let terbaik: { id: string; jarak: number } | null = null
+    for (const b of waktuBaris) {
+      const jarak = Math.abs(b.time - tengah)
+      if (!terbaik || jarak < terbaik.jarak) terbaik = { id: b.id, jarak }
+    }
+    if (!terbaik || terbaik.jarak > JENDELA_LEPAS_MS) continue
+    const daftar = hasil.get(terbaik.id) ?? []
+    daftar.push(...batch)
+    hasil.set(terbaik.id, daftar)
+  }
+  return hasil
 }
 
 /**
@@ -184,8 +231,10 @@ function keKegiatan(
   const terlihat = new Set<string>()
   const tambah = (url: string | null | undefined) => {
     const bersih = (url ?? "").trim()
-    if (!bersih || terlihat.has(bersih)) return
-    terlihat.add(bersih)
+    if (!bersih) return
+    const kunci = kunciFoto(bersih)
+    if (terlihat.has(kunci)) return
+    terlihat.add(kunci)
     fotoUrls.push(bersih)
   }
 
@@ -325,21 +374,15 @@ export async function fetchKegiatan(limit = 500): Promise<KegiatanPayload> {
   const storageFiles = await ambilBerkasStorage()
 
   // Foto yang sudah tertaut ke kegiatan tetap di kegiatannya; foto yang belum
-  // tertaut ditempatkan ke kegiatan dengan waktu unggah terdekat. Tidak ada
-  // foto yang dibuang, jadi semua unggahan admin ikut tampil.
+  // tertaut ditempatkan per batch unggahan ke kegiatan terdekat. Batch yang
+  // tidak berdekatan dengan kegiatan mana pun (sisa postingan yang sudah
+  // dihapus admin) tidak ditampilkan, sehingga arsip tetap sinkron.
   const { lepas } = pisahkanFotoStorage(barisData, storageFiles)
   const waktuBaris = barisData
     .map((b) => ({ id: String(b.id), time: waktuDari(b.created_at) }))
     .filter((b) => b.time > 0)
 
-  const lepasPerBaris = new Map<string, FotoEntri[]>()
-  for (const foto of lepas) {
-    const id = kegiatanTerdekat(foto.time, waktuBaris)
-    if (!id) continue
-    const daftar = lepasPerBaris.get(id) ?? []
-    daftar.push(foto)
-    lepasPerBaris.set(id, daftar)
-  }
+  const lepasPerBaris = petakanFotoLepas(lepas, waktuBaris)
 
   const kegiatan = barisData.map((b) =>
     keKegiatan(b, kumpulkanFotoEksplisit(b), lepasPerBaris.get(String(b.id)) ?? []),
