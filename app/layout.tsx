@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import "./globals.css";
 import { fontDisplay, fontBody } from "./layout-fonts";
 import { Toaster } from "@/components/ui/toaster";
+import AudioPlayer from "@/components/AudioPlayer";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://kegiatan-internal-kantor.vercel.app"),
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <Toaster />
+        <AudioPlayer />
       </body>
     </html>
   );
